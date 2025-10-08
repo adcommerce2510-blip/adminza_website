@@ -1,0 +1,3795 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { 
+  Plus,
+  Upload,
+  Package,
+  Settings,
+  Eye,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
+  Download,
+  Image as ImageIcon,
+  FileText,
+  DollarSign,
+  Tag,
+  Calendar,
+  User,
+  MapPin,
+  Phone,
+  Mail,
+  Building,
+  Star,
+  TrendingUp,
+  ShoppingCart,
+  Users,
+  BarChart3,
+  ChevronDown,
+  MoreVertical
+} from "lucide-react"
+
+// API functions
+const fetchProducts = async () => {
+  const response = await fetch('/api/products')
+  const data = await response.json()
+  return data.success ? data.data : []
+}
+
+const fetchServices = async () => {
+  const response = await fetch('/api/services')
+  const data = await response.json()
+  return data.success ? data.data : []
+}
+
+const createProduct = async (productData: any) => {
+  const response = await fetch('/api/products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(productData),
+  })
+  const data = await response.json()
+  return data
+}
+
+const createService = async (serviceData: any) => {
+  const response = await fetch('/api/services', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(serviceData),
+  })
+  const data = await response.json()
+  return data
+}
+
+const deleteProduct = async (id: string) => {
+  const response = await fetch(`/api/products/${id}`, {
+    method: 'DELETE',
+  })
+  const data = await response.json()
+  return data
+}
+
+const deleteService = async (id: string) => {
+  const response = await fetch(`/api/services/${id}`, {
+    method: 'DELETE',
+  })
+  const data = await response.json()
+  return data
+}
+
+const uploadFile = async (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('folder', 'adminza')
+  
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+  })
+  const data = await response.json()
+  return data
+}
+
+
+const mainCategories = [
+  { value: "product", label: "Product" },
+  { value: "service", label: "Service" }
+]
+
+export function DashboardPage() {
+  const [products, setProducts] = useState<any[]>([])
+  const [services, setServices] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false)
+  const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [activeSection, setActiveSection] = useState("dashboard")
+  const [activeSubSection, setActiveSubSection] = useState("all-items")
+  const [isProductsManagementExpanded, setIsProductsManagementExpanded] = useState(false)
+  const [isCustomerManagementExpanded, setIsCustomerManagementExpanded] = useState(false)
+  const [isOrdersExpanded, setIsOrdersExpanded] = useState(false)
+  const [categories, setCategories] = useState<any[]>([])
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
+  const [categoryForm, setCategoryForm] = useState({
+    name: "",
+    mainUse: "",
+    description: ""
+  })
+  const [subCategories, setSubCategories] = useState<any[]>([])
+  const [isSubCategoryDialogOpen, setIsSubCategoryDialogOpen] = useState(false)
+  const [subCategoryForm, setSubCategoryForm] = useState({
+    name: "",
+    mainCategory: "",
+    mainUse: "",
+    description: ""
+  })
+  const [level2Categories, setLevel2Categories] = useState<any[]>([])
+  const [isLevel2CategoryDialogOpen, setIsLevel2CategoryDialogOpen] = useState(false)
+  const [level2CategoryForm, setLevel2CategoryForm] = useState({
+    name: "",
+    mainCategory: "",
+    subCategory: "",
+    mainUse: "",
+    description: ""
+  })
+  const [customers, setCustomers] = useState<any[]>([])
+  const [isCustomerDialogOpen, setIsCustomerDialogOpen] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<any>(null)
+  const [customerForm, setCustomerForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "India"
+  })
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("")
+  const [eshopInventory, setEshopInventory] = useState<any[]>([])
+  const [isEshopDialogOpen, setIsEshopDialogOpen] = useState(false)
+  const [editingEshopItem, setEditingEshopItem] = useState<any>(null)
+  const [eshopForm, setEshopForm] = useState({
+    productId: "",
+    productName: "",
+    customerId: "",
+    customerName: "",
+    quantity: "",
+    notes: ""
+  })
+  const [eshopSearchTerm, setEshopSearchTerm] = useState("")
+  const [isRetopUpDialogOpen, setIsRetopUpDialogOpen] = useState(false)
+  const [retopUpItem, setRetopUpItem] = useState<any>(null)
+  const [retopUpQuantity, setRetopUpQuantity] = useState("")
+  const [isRecordUsageDialogOpen, setIsRecordUsageDialogOpen] = useState(false)
+  const [recordUsageItem, setRecordUsageItem] = useState<any>(null)
+  const [usedQuantity, setUsedQuantity] = useState("")
+  const [orders, setOrders] = useState<any[]>([])
+  const [orderSearchTerm, setOrderSearchTerm] = useState("")
+  const [isViewOrderDialogOpen, setIsViewOrderDialogOpen] = useState(false)
+  const [viewingOrder, setViewingOrder] = useState<any>(null)
+  const [quotations, setQuotations] = useState<any[]>([])
+  const [quotationSearchTerm, setQuotationSearchTerm] = useState("")
+  const [isViewQuotationDialogOpen, setIsViewQuotationDialogOpen] = useState(false)
+  const [viewingQuotation, setViewingQuotation] = useState<any>(null)
+
+  // Get categories for products (main categories with mainUse = "product")
+  const productCategories = categories
+    .filter((cat: any) => cat.mainUse === "product")
+    .map((cat: any) => cat.name)
+
+  // Get categories for services (main categories with mainUse = "service")  
+  const serviceCategories = categories
+    .filter((cat: any) => cat.mainUse === "service")
+    .map((cat: any) => cat.name)
+
+  // Helper functions for hierarchical category selection
+  const getSubCategoriesForMainCategory = (mainCategoryName: string) => {
+    return subCategories
+      .filter((subCat: any) => subCat.mainCategory === mainCategoryName)
+      .map((subCat: any) => subCat.name)
+  }
+
+  const getLevel2CategoriesForSubCategory = (mainCategoryName: string, subCategoryName: string) => {
+    return level2Categories
+      .filter((level2Cat: any) => 
+        level2Cat.mainCategory === mainCategoryName && 
+        level2Cat.subCategory === subCategoryName
+      )
+      .map((level2Cat: any) => level2Cat.name)
+  }
+
+  // Form states
+  const [mainCategory, setMainCategory] = useState("")
+  const [productForm, setProductForm] = useState({
+    name: "",
+    mainCategory: "",
+    subCategory: "",
+    level2Category: "",
+    price: "",
+    stock: "",
+    description: "",
+    images: [] as string[]
+  })
+
+  const [serviceForm, setServiceForm] = useState({
+    name: "",
+    mainCategory: "",
+    subCategory: "",
+    level2Category: "",
+    price: "",
+    duration: "",
+    description: "",
+    location: ""
+  })
+
+  // Load data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        const [productsData, servicesData, categoriesData, subCategoriesData, level2CategoriesData, customersData, eshopData, ordersData, quotationsData] = await Promise.all([
+          fetchProducts(),
+          fetchServices(),
+          fetchCategories(),
+          fetchSubCategories(),
+          fetchLevel2Categories(),
+          fetchCustomers(),
+          fetchEshopInventory(),
+          fetchOrders(),
+          fetchQuotations()
+        ])
+        setProducts(productsData)
+        setServices(servicesData)
+        setCategories(categoriesData)
+        setSubCategories(subCategoriesData)
+        setLevel2Categories(level2CategoriesData)
+        setCustomers(customersData)
+        setEshopInventory(eshopData)
+        setOrders(ordersData)
+        setQuotations(quotationsData)
+      } catch (error) {
+        console.error('Error loading data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories')
+      if (response.ok) {
+        const data = await response.json()
+        return data.success ? data.data : []
+      }
+      return []
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      return []
+    }
+  }
+
+  // Create category
+  const createCategory = async (categoryData: any) => {
+    try {
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(categoryData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data
+      }
+      return { success: false, error: 'Failed to create category' }
+    } catch (error) {
+      console.error('Error creating category:', error)
+      return { success: false, error: 'Error creating category' }
+    }
+  }
+
+  // Handle category form submission
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const result = await createCategory(categoryForm)
+      if (result.success) {
+        setCategories([...categories, result.data])
+        setCategoryForm({ name: "", mainUse: "", description: "" })
+        setIsCategoryDialogOpen(false)
+      } else {
+        alert('Error creating category: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error creating category:', error)
+      alert('Error creating category')
+    }
+  }
+
+  // Delete category
+  const deleteCategory = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this category?')) return
+    
+    try {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setCategories(categories.filter((cat: any) => cat._id !== id))
+        }
+        return data
+      }
+      return { success: false, error: 'Failed to delete category' }
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      alert('Error deleting category')
+    }
+  }
+
+  // Edit category
+  const handleEditCategory = (category: any) => {
+    setCategoryForm({
+      name: category.name,
+      mainUse: category.mainUse,
+      description: category.description || ""
+    })
+    setIsCategoryDialogOpen(true)
+  }
+
+  // Fetch sub-categories
+  const fetchSubCategories = async () => {
+    try {
+      const response = await fetch('/api/sub-categories')
+      if (response.ok) {
+        const data = await response.json()
+        return data.success ? data.data : []
+      }
+      return []
+    } catch (error) {
+      console.error('Error fetching sub-categories:', error)
+      return []
+    }
+  }
+
+  // Create sub-category
+  const createSubCategory = async (subCategoryData: any) => {
+    try {
+      const response = await fetch('/api/sub-categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(subCategoryData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data
+      }
+      return { success: false, error: 'Failed to create sub-category' }
+    } catch (error) {
+      console.error('Error creating sub-category:', error)
+      return { success: false, error: 'Error creating sub-category' }
+    }
+  }
+
+  // Handle sub-category form submission
+  const handleSubCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const selectedCategory = categories.find((cat: any) => cat._id === subCategoryForm.mainCategory)
+      const subCategoryData = {
+        name: subCategoryForm.name,
+        mainCategory: selectedCategory?.name || "",
+        mainUse: selectedCategory?.mainUse || "",
+        description: subCategoryForm.description
+      }
+      
+      const result = await createSubCategory(subCategoryData)
+      if (result.success) {
+        setSubCategories([...subCategories, result.data])
+        setSubCategoryForm({ name: "", mainCategory: "", mainUse: "", description: "" })
+        setIsSubCategoryDialogOpen(false)
+      } else {
+        alert('Error creating sub-category: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error creating sub-category:', error)
+      alert('Error creating sub-category')
+    }
+  }
+
+  // Delete sub-category
+  const deleteSubCategory = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this sub-category?')) return
+    
+    try {
+      const response = await fetch(`/api/sub-categories/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setSubCategories(subCategories.filter((subCat: any) => subCat._id !== id))
+        }
+        return data
+      }
+      return { success: false, error: 'Failed to delete sub-category' }
+    } catch (error) {
+      console.error('Error deleting sub-category:', error)
+      alert('Error deleting sub-category')
+    }
+  }
+
+  // Edit sub-category
+  const handleEditSubCategory = (subCategory: any) => {
+    const mainCat = categories.find((cat: any) => cat.name === subCategory.mainCategory)
+    setSubCategoryForm({
+      name: subCategory.name,
+      mainCategory: mainCat?._id || "",
+      mainUse: subCategory.mainUse,
+      description: subCategory.description || ""
+    })
+    setIsSubCategoryDialogOpen(true)
+  }
+
+  // Fetch level2 categories
+  const fetchLevel2Categories = async () => {
+    try {
+      const response = await fetch('/api/level2-categories')
+      if (response.ok) {
+        const data = await response.json()
+        return data.success ? data.data : []
+      }
+      return []
+    } catch (error) {
+      console.error('Error fetching level2 categories:', error)
+      return []
+    }
+  }
+
+  // Create level2 category
+  const createLevel2Category = async (level2CategoryData: any) => {
+    try {
+      const response = await fetch('/api/level2-categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(level2CategoryData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data
+      }
+      return { success: false, error: 'Failed to create level2 category' }
+    } catch (error) {
+      console.error('Error creating level2 category:', error)
+      return { success: false, error: 'Error creating level2 category' }
+    }
+  }
+
+  // Handle level2 category form submission
+  const handleLevel2CategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const selectedCategory = categories.find((cat: any) => cat._id === level2CategoryForm.mainCategory)
+      const selectedSubCategory = subCategories.find((subCat: any) => subCat._id === level2CategoryForm.subCategory)
+      
+      const level2CategoryData = {
+        name: level2CategoryForm.name,
+        mainCategory: selectedCategory?.name || "",
+        subCategory: selectedSubCategory?.name || "",
+        mainUse: selectedCategory?.mainUse || "",
+        description: level2CategoryForm.description
+      }
+      
+      const result = await createLevel2Category(level2CategoryData)
+      if (result.success) {
+        setLevel2Categories([...level2Categories, result.data])
+        setLevel2CategoryForm({ name: "", mainCategory: "", subCategory: "", mainUse: "", description: "" })
+        setIsLevel2CategoryDialogOpen(false)
+      } else {
+        alert('Error creating level2 category: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error creating level2 category:', error)
+      alert('Error creating level2 category')
+    }
+  }
+
+  // Delete level2 category
+  const deleteLevel2Category = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this level2 category?')) return
+    
+    try {
+      const response = await fetch(`/api/level2-categories/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setLevel2Categories(level2Categories.filter((level2Cat: any) => level2Cat._id !== id))
+        }
+        return data
+      }
+      return { success: false, error: 'Failed to delete level2 category' }
+    } catch (error) {
+      console.error('Error deleting level2 category:', error)
+      alert('Error deleting level2 category')
+    }
+  }
+
+  // Edit level2 category
+  const handleEditLevel2Category = (level2Category: any) => {
+    const mainCat = categories.find((cat: any) => cat.name === level2Category.mainCategory)
+    const subCat = subCategories.find((sc: any) => sc.name === level2Category.subCategory)
+    setLevel2CategoryForm({
+      name: level2Category.name,
+      mainCategory: mainCat?._id || "",
+      subCategory: subCat?._id || "",
+      mainUse: level2Category.mainUse,
+      description: level2Category.description || ""
+    })
+    setIsLevel2CategoryDialogOpen(true)
+  }
+
+  // Fetch customers
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch('/api/customers')
+      if (response.ok) {
+        const data = await response.json()
+        return data.success ? data.data : []
+      }
+      return []
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+      return []
+    }
+  }
+
+  // Create customer
+  const createCustomer = async (customerData: any) => {
+    try {
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customerData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data
+      }
+      return { success: false, error: 'Failed to create customer' }
+    } catch (error) {
+      console.error('Error creating customer:', error)
+      return { success: false, error: 'Error creating customer' }
+    }
+  }
+
+  // Update customer
+  const updateCustomer = async (id: string, customerData: any) => {
+    try {
+      const response = await fetch(`/api/customers/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customerData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data
+      }
+      return { success: false, error: 'Failed to update customer' }
+    } catch (error) {
+      console.error('Error updating customer:', error)
+      return { success: false, error: 'Error updating customer' }
+    }
+  }
+
+  // Delete customer
+  const deleteCustomer = async (id: string) => {
+    try {
+      const response = await fetch(`/api/customers/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data
+      }
+      return { success: false, error: 'Failed to delete customer' }
+    } catch (error) {
+      console.error('Error deleting customer:', error)
+      return { success: false, error: 'Error deleting customer' }
+    }
+  }
+
+  // Handle customer form submission
+  const handleCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      if (editingCustomer) {
+        const result = await updateCustomer(editingCustomer._id, customerForm)
+        if (result.success) {
+          setCustomers(customers.map((c: any) => c._id === editingCustomer._id ? result.data : c))
+          setIsCustomerDialogOpen(false)
+          setEditingCustomer(null)
+          setCustomerForm({ name: "", email: "", phone: "", password: "", address: "", city: "", state: "", zipCode: "", country: "India" })
+        } else {
+          alert('Error updating customer: ' + result.error)
+        }
+      } else {
+        const result = await createCustomer(customerForm)
+        if (result.success) {
+          setCustomers([...customers, result.data])
+          setIsCustomerDialogOpen(false)
+          setCustomerForm({ name: "", email: "", phone: "", password: "", address: "", city: "", state: "", zipCode: "", country: "India" })
+        } else {
+          alert('Error creating customer: ' + result.error)
+        }
+      }
+    } catch (error) {
+      console.error('Error saving customer:', error)
+      alert('Error saving customer')
+    }
+  }
+
+  // Handle delete customer
+  const handleDeleteCustomer = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this customer?')) return
+    
+    try {
+      const result = await deleteCustomer(id)
+      if (result.success) {
+        setCustomers(customers.filter((c: any) => c._id !== id))
+      } else {
+        alert('Error deleting customer: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error)
+      alert('Error deleting customer')
+    }
+  }
+
+  // Handle edit customer
+  const handleEditCustomer = (customer: any) => {
+    setEditingCustomer(customer)
+    setCustomerForm({
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      password: "", // Don't populate password for security
+      address: customer.address || "",
+      city: customer.city || "",
+      state: customer.state || "",
+      zipCode: customer.zipCode || "",
+      country: customer.country || "India"
+    })
+    setIsCustomerDialogOpen(true)
+  }
+
+  // Fetch E-Shop inventory
+  const fetchEshopInventory = async () => {
+    try {
+      const response = await fetch('/api/eshop-inventory')
+      if (response.ok) {
+        const data = await response.json()
+        return data.success ? data.data : []
+      }
+      return []
+    } catch (error) {
+      console.error('Error fetching eshop inventory:', error)
+      return []
+    }
+  }
+
+  // Update E-Shop inventory item
+  const updateEshopInventory = async (id: string, inventoryData: any) => {
+    try {
+      const response = await fetch(`/api/eshop-inventory/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(inventoryData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data
+      }
+      return { success: false, error: 'Failed to update inventory' }
+    } catch (error) {
+      console.error('Error updating inventory:', error)
+      return { success: false, error: 'Error updating inventory' }
+    }
+  }
+
+  // Handle edit E-Shop item
+  const handleEditEshopItem = (item: any) => {
+    setEditingEshopItem(item)
+    setEshopForm({
+      productId: item.productId,
+      productName: item.productName,
+      customerId: item.customerId,
+      customerName: item.customerName,
+      quantity: item.quantity.toString(),
+      notes: item.notes || ""
+    })
+    setIsEshopDialogOpen(true)
+  }
+
+  // Handle E-Shop form submission
+  const handleEshopSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const result = await updateEshopInventory(editingEshopItem._id, {
+        quantity: parseInt(eshopForm.quantity),
+        notes: eshopForm.notes
+      })
+      
+      if (result.success) {
+        setEshopInventory(eshopInventory.map((item: any) => 
+          item._id === editingEshopItem._id ? result.data : item
+        ))
+        setIsEshopDialogOpen(false)
+        setEditingEshopItem(null)
+        setEshopForm({ productId: "", productName: "", customerId: "", customerName: "", quantity: "", notes: "" })
+      } else {
+        alert('Error updating inventory: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error saving inventory:', error)
+      alert('Error saving inventory')
+    }
+  }
+
+  // Handle Re-top up
+  const handleRetopUp = (item: any) => {
+    setRetopUpItem(item)
+    setRetopUpQuantity("")
+    setIsRetopUpDialogOpen(true)
+  }
+
+  // Handle Re-top up submit
+  const handleRetopUpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const newQuantity = retopUpItem.quantity + parseInt(retopUpQuantity)
+      const result = await updateEshopInventory(retopUpItem._id, {
+        quantity: newQuantity,
+        notes: `Re-topped up with ${retopUpQuantity} units. ${retopUpItem.notes || ""}`
+      })
+      
+      if (result.success) {
+        setEshopInventory(eshopInventory.map((item: any) => 
+          item._id === retopUpItem._id ? result.data : item
+        ))
+        setIsRetopUpDialogOpen(false)
+        setRetopUpItem(null)
+        setRetopUpQuantity("")
+      } else {
+        alert('Error re-topping up: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error re-topping up:', error)
+      alert('Error re-topping up')
+    }
+  }
+
+  // Handle Record Usage
+  const handleRecordUsage = (item: any) => {
+    setRecordUsageItem(item)
+    setUsedQuantity("")
+    setIsRecordUsageDialogOpen(true)
+  }
+
+  // Handle Record Usage submit
+  const handleRecordUsageSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const used = parseInt(usedQuantity)
+      const newQuantity = recordUsageItem.quantity - used
+      
+      if (newQuantity < 0) {
+        alert('Used quantity cannot be more than available quantity!')
+        return
+      }
+
+      const currentDate = new Date().toLocaleDateString()
+      const result = await updateEshopInventory(recordUsageItem._id, {
+        quantity: newQuantity,
+        notes: `${currentDate}: Used ${used} units. Remaining: ${newQuantity} units. ${recordUsageItem.notes || ""}`
+      })
+      
+      if (result.success) {
+        setEshopInventory(eshopInventory.map((item: any) => 
+          item._id === recordUsageItem._id ? result.data : item
+        ))
+        setIsRecordUsageDialogOpen(false)
+        setRecordUsageItem(null)
+        setUsedQuantity("")
+      } else {
+        alert('Error recording usage: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error recording usage:', error)
+      alert('Error recording usage')
+    }
+  }
+
+  // Fetch orders
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch('/api/orders')
+      if (response.ok) {
+        const data = await response.json()
+        return data.success ? data.data : []
+      }
+      return []
+    } catch (error) {
+      console.error('Error fetching orders:', error)
+      return []
+    }
+  }
+
+  // Update order status
+  const updateOrderStatus = async (id: string, status: string) => {
+    try {
+      const response = await fetch(`/api/orders/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setOrders(orders.map((order: any) => 
+            order._id === id ? data.data : order
+          ))
+        }
+        return data
+      }
+      return { success: false, error: 'Failed to update order status' }
+    } catch (error) {
+      console.error('Error updating order status:', error)
+      return { success: false, error: 'Error updating order status' }
+    }
+  }
+
+  // Delete order
+  const deleteOrder = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this order?')) return
+    
+    try {
+      const response = await fetch(`/api/orders/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setOrders(orders.filter((order: any) => order._id !== id))
+        }
+        return data
+      }
+      return { success: false, error: 'Failed to delete order' }
+    } catch (error) {
+      console.error('Error deleting order:', error)
+      return { success: false, error: 'Error deleting order' }
+    }
+  }
+
+  // View complete order
+  const handleViewOrder = (order: any) => {
+    setViewingOrder(order)
+    setIsViewOrderDialogOpen(true)
+  }
+
+  // Fetch quotations
+  const fetchQuotations = async () => {
+    try {
+      const response = await fetch('/api/quotations')
+      if (response.ok) {
+        const data = await response.json()
+        return data.success ? data.data : []
+      }
+      return []
+    } catch (error) {
+      console.error('Error fetching quotations:', error)
+      return []
+    }
+  }
+
+  // Update quotation status
+  const updateQuotationStatus = async (id: string, status: string) => {
+    try {
+      const response = await fetch(`/api/quotations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setQuotations(quotations.map((quotation: any) => 
+            quotation._id === id ? data.data : quotation
+          ))
+        }
+        return data
+      }
+      return { success: false, error: 'Failed to update quotation status' }
+    } catch (error) {
+      console.error('Error updating quotation status:', error)
+      return { success: false, error: 'Error updating quotation status' }
+    }
+  }
+
+  // Delete quotation
+  const deleteQuotation = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this quotation?')) return
+    
+    try {
+      const response = await fetch(`/api/quotations/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setQuotations(quotations.filter((quotation: any) => quotation._id !== id))
+        }
+        return data
+      }
+      return { success: false, error: 'Failed to delete quotation' }
+    } catch (error) {
+      console.error('Error deleting quotation:', error)
+      return { success: false, error: 'Error deleting quotation' }
+    }
+  }
+
+  // View complete quotation
+  const handleViewQuotation = (quotation: any) => {
+    setViewingQuotation(quotation)
+    setIsViewQuotationDialogOpen(true)
+  }
+
+  const handleProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      // Build hierarchical category string
+      let categoryString = productForm.mainCategory
+      if (productForm.subCategory) {
+        categoryString += ` > ${productForm.subCategory}`
+      }
+      if (productForm.level2Category) {
+        categoryString += ` > ${productForm.level2Category}`
+      }
+
+      const result = await createProduct({
+        ...productForm,
+        category: categoryString,
+        price: parseFloat(productForm.price),
+        stock: parseInt(productForm.stock),
+        vendor: "Admin"
+      })
+      
+      if (result.success) {
+        setProducts([...products, result.data])
+        setProductForm({ name: "", mainCategory: "", subCategory: "", level2Category: "", price: "", stock: "", description: "", images: [] })
+        setMainCategory("")
+        setIsProductDialogOpen(false)
+      } else {
+        alert('Error creating product: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error creating product:', error)
+      alert('Error creating product')
+    }
+  }
+
+  const handleServiceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      // Build hierarchical category string
+      let categoryString = serviceForm.mainCategory
+      if (serviceForm.subCategory) {
+        categoryString += ` > ${serviceForm.subCategory}`
+      }
+      if (serviceForm.level2Category) {
+        categoryString += ` > ${serviceForm.level2Category}`
+      }
+
+      const result = await createService({
+        ...serviceForm,
+        category: categoryString,
+        price: parseFloat(serviceForm.price),
+        vendor: "Admin"
+      })
+      
+      if (result.success) {
+        setServices([...services, result.data])
+        setServiceForm({ name: "", mainCategory: "", subCategory: "", level2Category: "", price: "", duration: "", description: "", location: "" })
+        setMainCategory("")
+        setIsServiceDialogOpen(false)
+      } else {
+        alert('Error creating service: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error creating service:', error)
+      alert('Error creating service')
+    }
+  }
+
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      const result = await deleteProduct(id)
+      if (result.success) {
+        setProducts(products.filter((p: any) => p._id !== id))
+      } else {
+        alert('Error deleting product: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      alert('Error deleting product')
+    }
+  }
+
+  const handleDeleteService = async (id: string) => {
+    try {
+      const result = await deleteService(id)
+      if (result.success) {
+        setServices(services.filter((s: any) => s._id !== id))
+      } else {
+        alert('Error deleting service: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error deleting service:', error)
+      alert('Error deleting service')
+    }
+  }
+
+  const handleImageUpload = async (file: File) => {
+    try {
+      setUploading(true)
+      const result = await uploadFile(file)
+      if (result.success) {
+        return result.data.url
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Error uploading image')
+      return null
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const stats = [
+    {
+      title: "Total Products",
+      value: products.length,
+      change: "+12% from last month",
+      icon: Package,
+      color: "text-blue-600"
+    },
+    {
+      title: "Total Services",
+      value: services.length,
+      change: "+8% from last month",
+      icon: Settings,
+      color: "text-green-600"
+    },
+    {
+      title: "Total Revenue",
+      value: "₹2,45,000",
+      change: "+15% from last month",
+      icon: DollarSign,
+      color: "text-purple-600"
+    },
+    {
+      title: "Total Orders",
+      value: "156",
+      change: "+23% from last month",
+      icon: ShoppingCart,
+      color: "text-orange-600"
+    }
+  ]
+
+  return (
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <div className="w-64 bg-card border-r">
+        <div className="p-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-lg">A</span>
+            </div>
+            <span className="text-xl font-bold">Adminza Dashboard</span>
+          </div>
+        </div>
+
+        <nav className="px-4 space-y-2">
+          <Button 
+            variant={activeSection === "dashboard" ? "default" : "ghost"} 
+            className="w-full justify-start"
+            onClick={() => {
+              setActiveSection("dashboard")
+              setIsProductsManagementExpanded(false)
+              setIsCustomerManagementExpanded(false)
+              setIsOrdersExpanded(false)
+            }}
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Dashboard
+          </Button>
+          
+          {/* Products Management Section */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between w-full">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={() => {
+                  setIsProductsManagementExpanded(!isProductsManagementExpanded)
+                }}
+              >
+                <Package className="h-4 w-4 mr-2" />
+                Products Management
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-1"
+                onClick={() => setIsProductsManagementExpanded(!isProductsManagementExpanded)}
+              >
+                <ChevronDown className={`h-4 w-4 transition-transform ${isProductsManagementExpanded ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+            
+            {/* Sub-items - Only show when expanded */}
+            {isProductsManagementExpanded && (
+              <div className="ml-6 space-y-1">
+                <Button 
+                  variant={activeSubSection === "categories" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("products-management")
+                    setActiveSubSection("categories")
+                  }}
+                >
+                  <Tag className="h-3 w-3 mr-2" />
+                  Categories
+                </Button>
+                <Button 
+                  variant={activeSubSection === "sub-categories" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("products-management")
+                    setActiveSubSection("sub-categories")
+                  }}
+                >
+                  <Tag className="h-3 w-3 mr-2" />
+                  Sub Categories
+                </Button>
+                <Button 
+                  variant={activeSubSection === "level2-categories" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("products-management")
+                    setActiveSubSection("level2-categories")
+                  }}
+                >
+                  <Tag className="h-3 w-3 mr-2" />
+                  Level2 Sub Categories
+                </Button>
+                <Button 
+                  variant={activeSubSection === "services" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("products-management")
+                    setActiveSubSection("services")
+                  }}
+                >
+                  <Settings className="h-3 w-3 mr-2" />
+                  Services
+                </Button>
+                <Button 
+                  variant={activeSubSection === "products" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("products-management")
+                    setActiveSubSection("products")
+                  }}
+                >
+                  <Package className="h-3 w-3 mr-2" />
+                  Products
+                </Button>
+              </div>
+            )}
+          </div>
+          
+          {/* Customer Management Section */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between w-full">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={() => {
+                  setIsCustomerManagementExpanded(!isCustomerManagementExpanded)
+                }}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Customer Management
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-1"
+                onClick={() => setIsCustomerManagementExpanded(!isCustomerManagementExpanded)}
+              >
+                <ChevronDown className={`h-4 w-4 transition-transform ${isCustomerManagementExpanded ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+            
+            {/* Sub-items - Only show when expanded */}
+            {isCustomerManagementExpanded && (
+              <div className="ml-6 space-y-1">
+                <Button 
+                  variant={activeSubSection === "my-customers" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("customer-management")
+                    setActiveSubSection("my-customers")
+                  }}
+                >
+                  <Users className="h-3 w-3 mr-2" />
+                  My Customers
+                </Button>
+                <Button 
+                  variant={activeSubSection === "block-unblock-customer" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("customer-management")
+                    setActiveSubSection("block-unblock-customer")
+                  }}
+                >
+                  <Users className="h-3 w-3 mr-2" />
+                  Block/Unblock Customer
+                </Button>
+                <Button 
+                  variant={activeSubSection === "edit-customer-details" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("customer-management")
+                    setActiveSubSection("edit-customer-details")
+                  }}
+                >
+                  <Edit className="h-3 w-3 mr-2" />
+                  Edit Customer Details
+                </Button>
+              </div>
+            )}
+          </div>
+          {/* Orders Section */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between w-full">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={() => {
+                  setIsOrdersExpanded(!isOrdersExpanded)
+                }}
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Orders
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-1"
+                onClick={() => setIsOrdersExpanded(!isOrdersExpanded)}
+              >
+                <ChevronDown className={`h-4 w-4 transition-transform ${isOrdersExpanded ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+            
+            {/* Sub-items - Only show when expanded */}
+            {isOrdersExpanded && (
+              <div className="ml-6 space-y-1">
+                <Button 
+                  variant={activeSubSection === "all-orders" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("orders")
+                    setActiveSubSection("all-orders")
+                  }}
+                >
+                  <ShoppingCart className="h-3 w-3 mr-2" />
+                  All Orders
+                </Button>
+                <Button 
+                  variant={activeSubSection === "received-quotations" ? "default" : "ghost"} 
+                  className="w-full justify-start text-sm"
+                  onClick={() => {
+                    setActiveSection("orders")
+                    setActiveSubSection("received-quotations")
+                  }}
+                >
+                  <FileText className="h-3 w-3 mr-2" />
+                  Received Quotations
+                </Button>
+              </div>
+            )}
+          </div>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        {/* Header */}
+        <header className="bg-card border-b px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Dashboard</h1>
+              <p className="text-muted-foreground">Manage your products and services</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Export Data
+              </Button>
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-primary-foreground font-medium text-sm">A</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <main className="p-6 space-y-6">
+          {/* Dashboard Section */}
+          {activeSection === "dashboard" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {stats.map((stat) => {
+                  const IconComponent = stat.icon
+                  return (
+                    <Card key={stat.title}>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                            <p className="text-2xl font-bold">{stat.value}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+                          </div>
+                          <div className={`p-2 rounded-lg bg-muted ${stat.color}`}>
+                            <IconComponent className="h-6 w-6" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+              
+              {/* Additional Insights Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Activity</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">New product added</p>
+                          <p className="text-xs text-muted-foreground">2 hours ago</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Service updated</p>
+                          <p className="text-xs text-muted-foreground">4 hours ago</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">New order received</p>
+                          <p className="text-xs text-muted-foreground">6 hours ago</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Categories</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Office Furniture</span>
+                        <span className="text-sm font-medium">45%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">IT Services</span>
+                        <span className="text-sm font-medium">32%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Cleaning Services</span>
+                        <span className="text-sm font-medium">23%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {/* Products Management Section */}
+          {activeSection === "products-management" && (
+            <div className="space-y-6">
+              {/* Services Tab */}
+              {activeSubSection === "services" && (
+                <Card>
+                  <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>Services</CardTitle>
+                        <div className="flex items-center space-x-2">
+                          <Dialog open={isServiceDialogOpen} onOpenChange={setIsServiceDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Service
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Add New Service</DialogTitle>
+                              </DialogHeader>
+                              <form onSubmit={handleServiceSubmit} className="space-y-4">
+                                <div>
+                                  <Label htmlFor="service-name">Service Name</Label>
+                                  <Input
+                                    id="service-name"
+                                    placeholder="Enter service name"
+                                    value={serviceForm.name}
+                                    onChange={(e) => setServiceForm({...serviceForm, name: e.target.value})}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="service-main-category">Main Category</Label>
+                                  <Select value={serviceForm.mainCategory} onValueChange={(value) => {
+                                    setServiceForm({
+                                      ...serviceForm, 
+                                      mainCategory: value,
+                                      subCategory: "",
+                                      level2Category: ""
+                                    })
+                                  }}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select main category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {serviceCategories.map((category) => (
+                                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
+                                {serviceForm.mainCategory && getSubCategoriesForMainCategory(serviceForm.mainCategory).length > 0 && (
+                                  <div>
+                                    <Label htmlFor="service-sub-category">Sub Category</Label>
+                                    <Select value={serviceForm.subCategory} onValueChange={(value) => {
+                                      setServiceForm({
+                                        ...serviceForm, 
+                                        subCategory: value,
+                                        level2Category: ""
+                                      })
+                                    }}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select sub category" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {getSubCategoriesForMainCategory(serviceForm.mainCategory).map((subCategory) => (
+                                          <SelectItem key={subCategory} value={subCategory}>{subCategory}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                                
+                                {serviceForm.mainCategory && serviceForm.subCategory && getLevel2CategoriesForSubCategory(serviceForm.mainCategory, serviceForm.subCategory).length > 0 && (
+                                  <div>
+                                    <Label htmlFor="service-level2-category">Level 2 Sub Category</Label>
+                                    <Select value={serviceForm.level2Category} onValueChange={(value) => {
+                                      setServiceForm({...serviceForm, level2Category: value})
+                                    }}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select level 2 sub category" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {getLevel2CategoriesForSubCategory(serviceForm.mainCategory, serviceForm.subCategory).map((level2Category) => (
+                                          <SelectItem key={level2Category} value={level2Category}>{level2Category}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor="service-price">Price (₹)</Label>
+                                    <Input
+                                      id="service-price"
+                                      type="number"
+                                      placeholder="0"
+                                      value={serviceForm.price}
+                                      onChange={(e) => setServiceForm({...serviceForm, price: e.target.value})}
+                                      required
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="service-duration">Duration</Label>
+                                    <Input
+                                      id="service-duration"
+                                      placeholder="e.g., 2 hours, 1 day"
+                                      value={serviceForm.duration}
+                                      onChange={(e) => setServiceForm({...serviceForm, duration: e.target.value})}
+                                      required
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label htmlFor="service-location">Location</Label>
+                                  <Input
+                                    id="service-location"
+                                    placeholder="Enter service location"
+                                    value={serviceForm.location}
+                                    onChange={(e) => setServiceForm({...serviceForm, location: e.target.value})}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="service-description">Description</Label>
+                                  <Textarea
+                                    id="service-description"
+                                    placeholder="Enter service description"
+                                    value={serviceForm.description}
+                                    onChange={(e) => setServiceForm({...serviceForm, description: e.target.value})}
+                                    required
+                                  />
+                                </div>
+                                <div className="flex justify-end space-x-2">
+                                  <Button type="button" variant="outline" onClick={() => {
+                                    setIsServiceDialogOpen(false)
+                                    setServiceForm({ name: "", mainCategory: "", subCategory: "", level2Category: "", price: "", duration: "", description: "", location: "" })
+                                  }}>
+                                    Cancel
+                                  </Button>
+                                  <Button type="submit">
+                                    Add Service
+                                  </Button>
+                                </div>
+                              </form>
+                            </DialogContent>
+                          </Dialog>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                            <Input
+                              placeholder="Search services..."
+                              className="pl-10 w-64"
+                            />
+                          </div>
+                          <Select>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Categories</SelectItem>
+                              {serviceCategories.map((category) => (
+                                <SelectItem key={category} value={category}>{category}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Service</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Orders</TableHead>
+                          <TableHead>Rating</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={9} className="text-center py-8">
+                              Loading services...
+                            </TableCell>
+                          </TableRow>
+                        ) : services.map((service: any) => (
+                          <TableRow key={service._id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{service.name}</div>
+                                <div className="text-sm text-muted-foreground">{service.vendor}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{service.category}</TableCell>
+                            <TableCell>₹{service.price.toLocaleString()}</TableCell>
+                            <TableCell>{service.duration}</TableCell>
+                            <TableCell>{service.location}</TableCell>
+                            <TableCell>{service.orders}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
+                                {service.rating}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={service.status === "Active" ? "default" : "destructive"}>
+                                {service.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button variant="ghost" size="sm">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteService(service._id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Products Tab */}
+              {activeSubSection === "products" && (
+                <Card>
+                  <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>Products</CardTitle>
+                        <div className="flex items-center space-x-2">
+                          <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Product
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Add New Product</DialogTitle>
+                              </DialogHeader>
+                              <form onSubmit={handleProductSubmit} className="space-y-4">
+                                <div>
+                                  <Label htmlFor="product-name">Product Name</Label>
+                                  <Input
+                                    id="product-name"
+                                    placeholder="Enter product name"
+                                    value={productForm.name}
+                                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="product-main-category">Main Category</Label>
+                                  <Select value={productForm.mainCategory} onValueChange={(value) => {
+                                    setProductForm({
+                                      ...productForm, 
+                                      mainCategory: value,
+                                      subCategory: "",
+                                      level2Category: ""
+                                    })
+                                  }}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select main category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {productCategories.map((category) => (
+                                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
+                                {productForm.mainCategory && getSubCategoriesForMainCategory(productForm.mainCategory).length > 0 && (
+                                  <div>
+                                    <Label htmlFor="product-sub-category">Sub Category</Label>
+                                    <Select value={productForm.subCategory} onValueChange={(value) => {
+                                      setProductForm({
+                                        ...productForm, 
+                                        subCategory: value,
+                                        level2Category: ""
+                                      })
+                                    }}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select sub category" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {getSubCategoriesForMainCategory(productForm.mainCategory).map((subCategory) => (
+                                          <SelectItem key={subCategory} value={subCategory}>{subCategory}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                                
+                                {productForm.mainCategory && productForm.subCategory && getLevel2CategoriesForSubCategory(productForm.mainCategory, productForm.subCategory).length > 0 && (
+                                  <div>
+                                    <Label htmlFor="product-level2-category">Level 2 Sub Category</Label>
+                                    <Select value={productForm.level2Category} onValueChange={(value) => {
+                                      setProductForm({...productForm, level2Category: value})
+                                    }}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select level 2 sub category" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {getLevel2CategoriesForSubCategory(productForm.mainCategory, productForm.subCategory).map((level2Category) => (
+                                          <SelectItem key={level2Category} value={level2Category}>{level2Category}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor="product-price">Price (₹)</Label>
+                                    <Input
+                                      id="product-price"
+                                      type="number"
+                                      placeholder="0"
+                                      value={productForm.price}
+                                      onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                                      required
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="product-stock">Stock Quantity</Label>
+                                    <Input
+                                      id="product-stock"
+                                      type="number"
+                                      placeholder="0"
+                                      value={productForm.stock}
+                                      onChange={(e) => setProductForm({...productForm, stock: e.target.value})}
+                                      required
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label htmlFor="product-description">Description</Label>
+                                  <Textarea
+                                    id="product-description"
+                                    placeholder="Enter product description"
+                                    value={productForm.description}
+                                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="product-images">Images</Label>
+                                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                                    <div className="text-center">
+                                      <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                                      <div className="mt-4">
+                                        <Label htmlFor="file-upload" className="cursor-pointer">
+                                          <span className="mt-2 block text-sm font-medium text-muted-foreground">
+                                            {uploading ? "Uploading..." : "Click to upload images"}
+                                          </span>
+                                          <Input
+                                            id="file-upload"
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            className="sr-only"
+                                            onChange={async (e) => {
+                                              const files = e.target.files
+                                              if (files) {
+                                                const urls = []
+                                                for (let i = 0; i < files.length; i++) {
+                                                  const url = await handleImageUpload(files[i])
+                                                  if (url) urls.push(url)
+                                                }
+                                                setProductForm({...productForm, images: [...productForm.images, ...urls]})
+                                              }
+                                            }}
+                                          />
+                                        </Label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {productForm.images.length > 0 && (
+                                    <div className="mt-4 grid grid-cols-4 gap-2">
+                                      {productForm.images.map((image, index) => (
+                                        <div key={index} className="relative">
+                                          <img src={image} alt={`Product ${index + 1}`} className="w-full h-20 object-cover rounded" />
+                                          <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                            onClick={() => setProductForm({...productForm, images: productForm.images.filter((_, i) => i !== index)})}
+                                          >
+                                            ×
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex justify-end space-x-2">
+                                  <Button type="button" variant="outline" onClick={() => {
+                                    setIsProductDialogOpen(false)
+                                    setProductForm({ name: "", mainCategory: "", subCategory: "", level2Category: "", price: "", stock: "", description: "", images: [] })
+                                  }}>
+                                    Cancel
+                                  </Button>
+                                  <Button type="submit">
+                                    Add Product
+                                  </Button>
+                                </div>
+                              </form>
+                            </DialogContent>
+                          </Dialog>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                            <Input
+                              placeholder="Search products..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="pl-10 w-64"
+                            />
+                          </div>
+                          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Categories</SelectItem>
+                              {productCategories.map((category) => (
+                                <SelectItem key={category} value={category}>{category}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Product</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Stock</TableHead>
+                          <TableHead>Orders</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              Loading products...
+                            </TableCell>
+                          </TableRow>
+                        ) : products
+                          .filter((product: any) => 
+                            product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                            (selectedCategory === "all" || product.category === selectedCategory)
+                          )
+                          .map((product: any) => (
+                          <TableRow key={product._id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{product.name}</div>
+                                <div className="text-sm text-muted-foreground">{product.vendor}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{product.category}</TableCell>
+                            <TableCell>₹{product.price.toLocaleString()}</TableCell>
+                            <TableCell>{product.stock}</TableCell>
+                            <TableCell>{product.orders}</TableCell>
+                            <TableCell>
+                              <Badge variant={product.status === "Active" ? "default" : "destructive"}>
+                                {product.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button variant="ghost" size="sm">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteProduct(product._id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* All Items Tab */}
+              {activeSubSection === "all-items" && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>All Items</CardTitle>
+                      <div className="flex items-center space-x-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input
+                            placeholder="Search products and services..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 w-64"
+                          />
+                        </div>
+                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {productCategories.map((category) => (
+                              <SelectItem key={category} value={category}>{category}</SelectItem>
+                            ))}
+                            {serviceCategories.map((category) => (
+                              <SelectItem key={category} value={category}>{category}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Details</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              Loading items...
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          <>
+                            {/* Products */}
+                            {products
+                              .filter((product: any) => 
+                                product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                                (selectedCategory === "all" || product.category === selectedCategory)
+                              )
+                              .map((product: any) => (
+                              <TableRow key={`product-${product._id}`}>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">{product.name}</div>
+                                    <div className="text-sm text-muted-foreground">{product.vendor}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">Product</Badge>
+                                </TableCell>
+                                <TableCell>{product.category}</TableCell>
+                                <TableCell>₹{product.price.toLocaleString()}</TableCell>
+                                <TableCell>
+                                  <div className="text-sm">
+                                    <div>Stock: {product.stock}</div>
+                                    <div>Orders: {product.orders}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={product.status === "Active" ? "default" : "destructive"}>
+                                    {product.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button variant="ghost" size="sm">
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm">
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteProduct(product._id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {/* Services */}
+                            {services
+                              .filter((service: any) => 
+                                service.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                                (selectedCategory === "all" || service.category === selectedCategory)
+                              )
+                              .map((service: any) => (
+                              <TableRow key={`service-${service._id}`}>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">{service.name}</div>
+                                    <div className="text-sm text-muted-foreground">{service.vendor}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary">Service</Badge>
+                                </TableCell>
+                                <TableCell>{service.category}</TableCell>
+                                <TableCell>₹{service.price.toLocaleString()}</TableCell>
+                                <TableCell>
+                                  <div className="text-sm">
+                                    <div>Duration: {service.duration}</div>
+                                    <div>Location: {service.location}</div>
+                                    <div>Orders: {service.orders}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={service.status === "Active" ? "default" : "destructive"}>
+                                    {service.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button variant="ghost" size="sm">
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm">
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteService(service._id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Categories, Sub Categories, Level2 Categories - Placeholder */}
+              {(activeSubSection === "categories" || activeSubSection === "sub-categories" || activeSubSection === "level2-categories") && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>
+                        {activeSubSection === "categories" && "Categories"}
+                        {activeSubSection === "sub-categories" && "Sub Categories"}
+                        {activeSubSection === "level2-categories" && "Level2 Sub Categories"}
+                      </CardTitle>
+                      {activeSubSection === "categories" && (
+                        <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Category
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>Add New Category</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleCategorySubmit} className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="category-name">Category Name</Label>
+                                <Input
+                                  id="category-name"
+                                  placeholder="e.g., Office Furniture"
+                                  value={categoryForm.name}
+                                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="main-use">Main Use</Label>
+                                <Select value={categoryForm.mainUse} onValueChange={(value) => setCategoryForm({ ...categoryForm, mainUse: value })}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select main use" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="product">Product</SelectItem>
+                                    <SelectItem value="service">Service</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="description">Description (Optional)</Label>
+                                <Textarea
+                                  id="description"
+                                  placeholder="Brief description of this category..."
+                                  value={categoryForm.description}
+                                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button type="button" variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
+                                  Cancel
+                                </Button>
+                                <Button type="submit">
+                                  Add Category
+                                </Button>
+                              </div>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                      {activeSubSection === "sub-categories" && (
+                        <Dialog open={isSubCategoryDialogOpen} onOpenChange={setIsSubCategoryDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Sub Category
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>Add New Sub Category</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleSubCategorySubmit} className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="sub-category-name">Sub Category Name</Label>
+                                <Input
+                                  id="sub-category-name"
+                                  placeholder="e.g., Office Chairs"
+                                  value={subCategoryForm.name}
+                                  onChange={(e) => setSubCategoryForm({ ...subCategoryForm, name: e.target.value })}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="main-category-select">Main Category</Label>
+                                <Select value={subCategoryForm.mainCategory} onValueChange={(value) => {
+                                  const selectedCategory = categories.find((cat: any) => cat._id === value)
+                                  setSubCategoryForm({ 
+                                    ...subCategoryForm, 
+                                    mainCategory: selectedCategory?._id || "",
+                                    mainUse: selectedCategory?.mainUse || ""
+                                  })
+                                }}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select main category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {categories.map((category: any) => (
+                                      <SelectItem key={category._id} value={category._id}>{category.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="main-use-display">Main Use</Label>
+                                <div className="p-2 bg-muted rounded-md">
+                                  <Badge variant={subCategoryForm.mainUse === "product" ? "default" : "secondary"}>
+                                    {subCategoryForm.mainUse === "product" ? "Product" : subCategoryForm.mainUse === "service" ? "Service" : "Select main category first"}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="sub-description">Description (Optional)</Label>
+                                <Textarea
+                                  id="sub-description"
+                                  placeholder="Brief description of this sub-category..."
+                                  value={subCategoryForm.description}
+                                  onChange={(e) => setSubCategoryForm({ ...subCategoryForm, description: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button type="button" variant="outline" onClick={() => setIsSubCategoryDialogOpen(false)}>
+                                  Cancel
+                                </Button>
+                                <Button type="submit" disabled={!subCategoryForm.mainCategory}>
+                                  Add Sub Category
+                                </Button>
+                              </div>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                      {activeSubSection === "level2-categories" && (
+                        <Dialog open={isLevel2CategoryDialogOpen} onOpenChange={setIsLevel2CategoryDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Level2 Category
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>Add New Level2 Category</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleLevel2CategorySubmit} className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="level2-category-name">Level2 Category Name</Label>
+                                <Input
+                                  id="level2-category-name"
+                                  placeholder="e.g., Office Chairs"
+                                  value={level2CategoryForm.name}
+                                  onChange={(e) => setLevel2CategoryForm({ ...level2CategoryForm, name: e.target.value })}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="level2-main-category-select">Main Category</Label>
+                                <Select value={level2CategoryForm.mainCategory} onValueChange={(value) => {
+                                  const selectedCategory = categories.find((cat: any) => cat._id === value)
+                                  setLevel2CategoryForm({ 
+                                    ...level2CategoryForm, 
+                                    mainCategory: selectedCategory?._id || "",
+                                    subCategory: "",
+                                    mainUse: selectedCategory?.mainUse || ""
+                                  })
+                                }}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select main category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {categories.map((category: any) => (
+                                      <SelectItem key={category._id} value={category._id}>{category.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="level2-sub-category-select">Sub Category</Label>
+                                <Select 
+                                  value={level2CategoryForm.subCategory} 
+                                  onValueChange={(value) => setLevel2CategoryForm({ ...level2CategoryForm, subCategory: value })}
+                                  disabled={!level2CategoryForm.mainCategory}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select sub category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {subCategories
+                                      .filter((subCat: any) => subCat.mainCategory === categories.find((cat: any) => cat._id === level2CategoryForm.mainCategory)?.name)
+                                      .map((subCategory: any) => (
+                                        <SelectItem key={subCategory._id} value={subCategory._id}>{subCategory.name}</SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="level2-main-use-display">Main Use</Label>
+                                <div className="p-2 bg-muted rounded-md">
+                                  <Badge variant={level2CategoryForm.mainUse === "product" ? "default" : "secondary"}>
+                                    {level2CategoryForm.mainUse === "product" ? "Product" : level2CategoryForm.mainUse === "service" ? "Service" : "Select main category first"}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="level2-description">Description (Optional)</Label>
+                                <Textarea
+                                  id="level2-description"
+                                  placeholder="Brief description of this level2 category..."
+                                  value={level2CategoryForm.description}
+                                  onChange={(e) => setLevel2CategoryForm({ ...level2CategoryForm, description: e.target.value })}
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button type="button" variant="outline" onClick={() => setIsLevel2CategoryDialogOpen(false)}>
+                                  Cancel
+                                </Button>
+                                <Button type="submit" disabled={!level2CategoryForm.mainCategory || !level2CategoryForm.subCategory}>
+                                  Add Level2 Category
+                                </Button>
+                              </div>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {activeSubSection === "categories" ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Category Name</TableHead>
+                            <TableHead>Main Use</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {loading ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center py-8">
+                                Loading categories...
+                              </TableCell>
+                            </TableRow>
+                          ) : categories.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center py-8">
+                                <div className="text-muted-foreground">
+                                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                  <p>No categories found</p>
+                                  <p className="text-sm">Add your first category to get started</p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            categories.map((category: any) => (
+                              <TableRow key={category._id}>
+                                <TableCell>
+                                  <div className="font-medium">{category.name}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={category.mainUse === "product" ? "default" : "secondary"}>
+                                    {category.mainUse === "product" ? "Product" : "Service"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground">
+                                    {new Date(category.createdAt).toLocaleDateString()}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleEditCategory(category)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => deleteCategory(category._id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    ) : activeSubSection === "sub-categories" ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Sub Category Name</TableHead>
+                            <TableHead>Main Category</TableHead>
+                            <TableHead>Use</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {loading ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-8">
+                                Loading sub-categories...
+                              </TableCell>
+                            </TableRow>
+                          ) : subCategories.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-8">
+                                <div className="text-muted-foreground">
+                                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                  <p>No sub-categories found</p>
+                                  <p className="text-sm">Add your first sub-category to get started</p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            subCategories.map((subCategory: any) => (
+                              <TableRow key={subCategory._id}>
+                                <TableCell>
+                                  <div className="font-medium">{subCategory.name}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium">{subCategory.mainCategory}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={subCategory.mainUse === "product" ? "default" : "secondary"}>
+                                    {subCategory.mainUse === "product" ? "Product" : "Service"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground">
+                                    {new Date(subCategory.createdAt).toLocaleDateString()}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleEditSubCategory(subCategory)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => deleteSubCategory(subCategory._id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    ) : activeSubSection === "level2-categories" ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Level2 Category Name</TableHead>
+                            <TableHead>Main Category</TableHead>
+                            <TableHead>Sub Category</TableHead>
+                            <TableHead>Use</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {loading ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8">
+                                Loading level2 categories...
+                              </TableCell>
+                            </TableRow>
+                          ) : level2Categories.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8">
+                                <div className="text-muted-foreground">
+                                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                  <p>No level2 categories found</p>
+                                  <p className="text-sm">Add your first level2 category to get started</p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            level2Categories.map((level2Category: any) => (
+                              <TableRow key={level2Category._id}>
+                                <TableCell>
+                                  <div className="font-medium">{level2Category.name}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium">{level2Category.mainCategory}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium">{level2Category.subCategory}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={level2Category.mainUse === "product" ? "default" : "secondary"}>
+                                    {level2Category.mainUse === "product" ? "Product" : "Service"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground">
+                                    {new Date(level2Category.createdAt).toLocaleDateString()}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleEditLevel2Category(level2Category)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => deleteLevel2Category(level2Category._id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">Coming soon...</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* Customer Management Section */}
+          {activeSection === "customer-management" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Customer Management</h2>
+                <p className="text-muted-foreground">Manage your customers and their access</p>
+              </div>
+
+              {/* My Customers Tab - Shows E-Shop Inventory */}
+              {activeSubSection === "my-customers" && (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="relative flex-1 max-w-md">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search customers..."
+                        value={customerSearchTerm}
+                        onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  {loading ? (
+                    <Card>
+                      <CardContent className="py-8">
+                        <div className="text-center text-muted-foreground">
+                          Loading customers...
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : eshopInventory.length === 0 ? (
+                    <Card>
+                      <CardContent className="py-8">
+                        <div className="text-center text-muted-foreground">
+                          <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No customer inventory found</p>
+                          <p className="text-sm">Products given to customers will appear here</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <>
+                      {/* Group inventory by customer */}
+                      {Object.entries(
+                        eshopInventory
+                          .filter((item: any) => 
+                            item.customerName.toLowerCase().includes(customerSearchTerm.toLowerCase())
+                          )
+                          .reduce((acc: any, item: any) => {
+                            if (!acc[item.customerId]) {
+                              acc[item.customerId] = {
+                                customerName: item.customerName,
+                                customerId: item.customerId,
+                                products: []
+                              }
+                            }
+                            acc[item.customerId].products.push(item)
+                            return acc
+                          }, {})
+                      ).map(([customerId, customerData]: [string, any]) => (
+                        <Card key={customerId}>
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <CardTitle className="text-xl">{customerData.customerName}</CardTitle>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {customerData.products.length} product{customerData.products.length !== 1 ? 's' : ''} in stock
+                                </p>
+                              </div>
+                              <Button>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Generate Invoice
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Product Name</TableHead>
+                                  <TableHead>Stock in Hand</TableHead>
+                                  <TableHead>Last Updated</TableHead>
+                                  <TableHead>Notes</TableHead>
+                                  <TableHead>Actions</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {customerData.products.map((item: any) => (
+                                  <TableRow key={item._id}>
+                                    <TableCell>
+                                      <div className="font-medium">{item.productName}</div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant={item.quantity < 10 ? "destructive" : "default"}>
+                                        {item.quantity} units
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="text-sm text-muted-foreground">
+                                        {new Date(item.lastUpdated).toLocaleDateString()}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="text-sm text-muted-foreground max-w-xs truncate">
+                                        {item.notes || "-"}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="sm">
+                                            <MoreVertical className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onClick={() => handleRecordUsage(item)}>
+                                            <DollarSign className="h-4 w-4 mr-2" />
+                                            Record Usage
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleRetopUp(item)}>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Re-top up
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleEditEshopItem(item)}>
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit Manually
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleEditEshopItem(item)}>
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            View Details
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Edit Customer Details Tab */}
+              {activeSubSection === "edit-customer-details" && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Edit Customer Details</CardTitle>
+                      <div className="flex items-center space-x-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input
+                            placeholder="Search customers..."
+                            value={customerSearchTerm}
+                            onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                            className="pl-10 w-64"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Customer Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Address</TableHead>
+                          <TableHead>Joined Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              Loading customers...
+                            </TableCell>
+                          </TableRow>
+                        ) : customers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              <div className="text-muted-foreground">
+                                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>No customers found</p>
+                                <p className="text-sm">Customers will appear here once they register</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          customers
+                            .filter((customer: any) => 
+                              customer.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+                              customer.email.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+                              customer.phone.includes(customerSearchTerm)
+                            )
+                            .map((customer: any) => (
+                              <TableRow key={customer._id}>
+                                <TableCell>
+                                  <div className="font-medium">{customer.name}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm">{customer.email}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm">{customer.phone}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground max-w-xs truncate">
+                                    {customer.address ? `${customer.address}, ${customer.city || ''}` : '-'}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground">
+                                    {new Date(customer.createdAt).toLocaleDateString()}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={customer.isBlocked ? "destructive" : "default"}>
+                                    {customer.isBlocked ? "Blocked" : "Active"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleEditCustomer(customer)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteCustomer(customer._id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Edit Customer Dialog */}
+              <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>{editingCustomer ? "Edit Customer" : "Add Customer"}</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCustomerSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="customer-name">Name</Label>
+                        <Input
+                          id="customer-name"
+                          placeholder="Enter customer name"
+                          value={customerForm.name}
+                          onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="customer-email">Email</Label>
+                        <Input
+                          id="customer-email"
+                          type="email"
+                          placeholder="Enter email"
+                          value={customerForm.email}
+                          onChange={(e) => setCustomerForm({...customerForm, email: e.target.value})}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="customer-phone">Phone</Label>
+                        <Input
+                          id="customer-phone"
+                          placeholder="Enter phone number"
+                          value={customerForm.phone}
+                          onChange={(e) => setCustomerForm({...customerForm, phone: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="customer-password">Password {editingCustomer && "(Leave blank to keep current)"}</Label>
+                        <Input
+                          id="customer-password"
+                          type="password"
+                          placeholder="Enter password"
+                          value={customerForm.password}
+                          onChange={(e) => setCustomerForm({...customerForm, password: e.target.value})}
+                          required={!editingCustomer}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="customer-address">Address</Label>
+                      <Input
+                        id="customer-address"
+                        placeholder="Enter address"
+                        value={customerForm.address}
+                        onChange={(e) => setCustomerForm({...customerForm, address: e.target.value})}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="customer-city">City</Label>
+                        <Input
+                          id="customer-city"
+                          placeholder="Enter city"
+                          value={customerForm.city}
+                          onChange={(e) => setCustomerForm({...customerForm, city: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="customer-state">State</Label>
+                        <Input
+                          id="customer-state"
+                          placeholder="Enter state"
+                          value={customerForm.state}
+                          onChange={(e) => setCustomerForm({...customerForm, state: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="customer-zipcode">Zip Code</Label>
+                        <Input
+                          id="customer-zipcode"
+                          placeholder="Enter zip code"
+                          value={customerForm.zipCode}
+                          onChange={(e) => setCustomerForm({...customerForm, zipCode: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="customer-country">Country</Label>
+                        <Input
+                          id="customer-country"
+                          placeholder="Enter country"
+                          value={customerForm.country}
+                          onChange={(e) => setCustomerForm({...customerForm, country: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => {
+                        setIsCustomerDialogOpen(false)
+                        setEditingCustomer(null)
+                        setCustomerForm({ name: "", email: "", phone: "", password: "", address: "", city: "", state: "", zipCode: "", country: "India" })
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">
+                        {editingCustomer ? "Update Customer" : "Add Customer"}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+
+              {/* Block/Unblock Customer Tab */}
+              {activeSubSection === "block-unblock-customer" && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Block/Unblock Customer</CardTitle>
+                      <div className="flex items-center space-x-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input
+                            placeholder="Search customers..."
+                            className="pl-10 w-64"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Customer Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8">
+                            <div className="text-muted-foreground">
+                              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                              <p>No customers found</p>
+                              <p className="text-sm">Customers will appear here once they register</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* E-Shop Section */}
+          {activeSection === "eshop" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">E-Shop Inventory</h2>
+                <p className="text-muted-foreground">Manage products given to customers</p>
+              </div>
+
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search customers..."
+                    value={eshopSearchTerm}
+                    onChange={(e) => setEshopSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {loading ? (
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="text-center text-muted-foreground">
+                      Loading inventory...
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : eshopInventory.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="text-center text-muted-foreground">
+                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No inventory items found</p>
+                      <p className="text-sm">Products given to customers will appear here</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Group inventory by customer */}
+                  {Object.entries(
+                    eshopInventory
+                      .filter((item: any) => 
+                        item.customerName.toLowerCase().includes(eshopSearchTerm.toLowerCase())
+                      )
+                      .reduce((acc: any, item: any) => {
+                        if (!acc[item.customerId]) {
+                          acc[item.customerId] = {
+                            customerName: item.customerName,
+                            customerId: item.customerId,
+                            products: []
+                          }
+                        }
+                        acc[item.customerId].products.push(item)
+                        return acc
+                      }, {})
+                  ).map(([customerId, customerData]: [string, any]) => (
+                    <Card key={customerId}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-xl">{customerData.customerName}</CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {customerData.products.length} product{customerData.products.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          <Button>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Generate Invoice
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Product Name</TableHead>
+                              <TableHead>Quantity</TableHead>
+                              <TableHead>Last Updated</TableHead>
+                              <TableHead>Notes</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {customerData.products.map((item: any) => (
+                              <TableRow key={item._id}>
+                                <TableCell>
+                                  <div className="font-medium">{item.productName}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={item.quantity < 10 ? "destructive" : "default"}>
+                                    {item.quantity} units
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground">
+                                    {new Date(item.lastUpdated).toLocaleDateString()}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground max-w-xs truncate">
+                                    {item.notes || "-"}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleRecordUsage(item)}>
+                                        <DollarSign className="h-4 w-4 mr-2" />
+                                        Record Usage
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleRetopUp(item)}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Re-top up
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleEditEshopItem(item)}>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit Manually
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleEditEshopItem(item)}>
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        View Details
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </>
+              )}
+
+              {/* Edit E-Shop Item Dialog */}
+              <Dialog open={isEshopDialogOpen} onOpenChange={setIsEshopDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Edit Inventory Item</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleEshopSubmit} className="space-y-4">
+                    <div>
+                      <Label>Product Name</Label>
+                      <Input value={eshopForm.productName} disabled />
+                    </div>
+                    <div>
+                      <Label>Customer Name</Label>
+                      <Input value={eshopForm.customerName} disabled />
+                    </div>
+                    <div>
+                      <Label htmlFor="eshop-quantity">Quantity</Label>
+                      <Input
+                        id="eshop-quantity"
+                        type="number"
+                        placeholder="Enter quantity"
+                        value={eshopForm.quantity}
+                        onChange={(e) => setEshopForm({...eshopForm, quantity: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="eshop-notes">Notes</Label>
+                      <Textarea
+                        id="eshop-notes"
+                        placeholder="Add notes..."
+                        value={eshopForm.notes}
+                        onChange={(e) => setEshopForm({...eshopForm, notes: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => {
+                        setIsEshopDialogOpen(false)
+                        setEditingEshopItem(null)
+                        setEshopForm({ productId: "", productName: "", customerId: "", customerName: "", quantity: "", notes: "" })
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">
+                        Update Quantity
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+
+              {/* Re-top up Dialog */}
+              <Dialog open={isRetopUpDialogOpen} onOpenChange={setIsRetopUpDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Re-top up Inventory</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleRetopUpSubmit} className="space-y-4">
+                    <div>
+                      <Label>Product Name</Label>
+                      <Input value={retopUpItem?.productName || ""} disabled />
+                    </div>
+                    <div>
+                      <Label>Customer Name</Label>
+                      <Input value={retopUpItem?.customerName || ""} disabled />
+                    </div>
+                    <div>
+                      <Label>Current Quantity</Label>
+                      <Input value={retopUpItem?.quantity || 0} disabled />
+                    </div>
+                    <div>
+                      <Label htmlFor="retopup-quantity">Add Quantity</Label>
+                      <Input
+                        id="retopup-quantity"
+                        type="number"
+                        placeholder="Enter quantity to add"
+                        value={retopUpQuantity}
+                        onChange={(e) => setRetopUpQuantity(e.target.value)}
+                        required
+                        min="1"
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        New total: {retopUpItem && retopUpQuantity ? retopUpItem.quantity + parseInt(retopUpQuantity || "0") : retopUpItem?.quantity || 0} units
+                      </p>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => {
+                        setIsRetopUpDialogOpen(false)
+                        setRetopUpItem(null)
+                        setRetopUpQuantity("")
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">
+                        Confirm Re-top up
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+
+              {/* Record Usage Dialog */}
+              <Dialog open={isRecordUsageDialogOpen} onOpenChange={setIsRecordUsageDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Record Product Usage</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleRecordUsageSubmit} className="space-y-4">
+                    <div>
+                      <Label>Product Name</Label>
+                      <Input value={recordUsageItem?.productName || ""} disabled />
+                    </div>
+                    <div>
+                      <Label>Customer Name</Label>
+                      <Input value={recordUsageItem?.customerName || ""} disabled />
+                    </div>
+                    <div>
+                      <Label>Current Quantity (Items with Customer)</Label>
+                      <Input value={recordUsageItem?.quantity || 0} disabled />
+                    </div>
+                    <div>
+                      <Label htmlFor="used-quantity">Used Quantity (During Visit)</Label>
+                      <Input
+                        id="used-quantity"
+                        type="number"
+                        placeholder="Enter quantity used"
+                        value={usedQuantity}
+                        onChange={(e) => setUsedQuantity(e.target.value)}
+                        required
+                        min="1"
+                        max={recordUsageItem?.quantity || 0}
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Remaining with customer: {recordUsageItem && usedQuantity ? Math.max(0, recordUsageItem.quantity - parseInt(usedQuantity || "0")) : recordUsageItem?.quantity || 0} units
+                      </p>
+                    </div>
+                    <div className="bg-muted p-3 rounded-md">
+                      <p className="text-sm font-medium">Usage Summary:</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        • Before: {recordUsageItem?.quantity || 0} units
+                        <br />
+                        • Used: {usedQuantity || 0} units
+                        <br />
+                        • After: {recordUsageItem && usedQuantity ? Math.max(0, recordUsageItem.quantity - parseInt(usedQuantity || "0")) : recordUsageItem?.quantity || 0} units
+                      </p>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => {
+                        setIsRecordUsageDialogOpen(false)
+                        setRecordUsageItem(null)
+                        setUsedQuantity("")
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">
+                        Confirm Usage
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
+
+          {/* Orders Section */}
+          {activeSection === "orders" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Orders Management</h2>
+                <p className="text-muted-foreground">View and manage all customer orders</p>
+              </div>
+
+              {/* All Orders Tab */}
+              {activeSubSection === "all-orders" && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>All Orders</CardTitle>
+                    <div className="flex items-center space-x-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                          placeholder="Search orders..."
+                          value={orderSearchTerm}
+                          onChange={(e) => setOrderSearchTerm(e.target.value)}
+                          className="pl-10 w-64"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Order No</TableHead>
+                        <TableHead>Customer Name</TableHead>
+                        <TableHead>Address</TableHead>
+                        <TableHead>Total Price</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8">
+                            Loading orders...
+                          </TableCell>
+                        </TableRow>
+                      ) : orders.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8">
+                            <div className="text-muted-foreground">
+                              <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                              <p>No orders found</p>
+                              <p className="text-sm">Orders will appear here once customers place them</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        orders
+                          .filter((order: any) => 
+                            order.orderNo.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+                            order.customerName.toLowerCase().includes(orderSearchTerm.toLowerCase())
+                          )
+                          .map((order: any) => (
+                            <TableRow key={order._id}>
+                              <TableCell>
+                                <div className="font-medium">#{order.orderNo}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">{order.customerName}</div>
+                                <div className="text-sm text-muted-foreground">{order.customerPhone}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm max-w-xs truncate">
+                                  {order.shippingAddress?.street || order.shippingAddress?.city 
+                                    ? `${order.shippingAddress.street || ''}, ${order.shippingAddress.city || ''}`
+                                    : '-'
+                                  }
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">₹{order.totalAmount.toLocaleString()}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {new Date(order.createdAt).toLocaleDateString()}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(order.createdAt).toLocaleTimeString()}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={order.status === "Confirmed" ? "default" : "secondary"}>
+                                  {order.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <Select
+                                    value={order.status}
+                                    onValueChange={(value) => updateOrderStatus(order._id, value)}
+                                  >
+                                    <SelectTrigger className="w-32 h-8">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Order Placed">Order Placed</SelectItem>
+                                      <SelectItem value="Confirmed">Confirmed</SelectItem>
+                                      <SelectItem value="Processing">Processing</SelectItem>
+                                      <SelectItem value="Shipped">Shipped</SelectItem>
+                                      <SelectItem value="Delivered">Delivered</SelectItem>
+                                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleViewOrder(order)}>
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        View Complete Order
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => deleteOrder(order._id)}>
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete Order
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+              )}
+
+              {/* View Complete Order Dialog - Shared between tabs */}
+              <Dialog open={isViewOrderDialogOpen} onOpenChange={setIsViewOrderDialogOpen}>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Order Details - #{viewingOrder?.orderNo}</DialogTitle>
+                  </DialogHeader>
+                  {viewingOrder && (
+                    <div className="space-y-6">
+                      {/* Customer Info */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Customer Name</Label>
+                          <p className="text-sm font-medium mt-1">{viewingOrder.customerName}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Order Date</Label>
+                          <p className="text-sm mt-1">{new Date(viewingOrder.createdAt).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                          <p className="text-sm mt-1">{viewingOrder.customerEmail}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
+                          <p className="text-sm mt-1">{viewingOrder.customerPhone}</p>
+                        </div>
+                      </div>
+
+                      {/* Shipping Address */}
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Shipping Address</Label>
+                        <p className="text-sm mt-1">
+                          {viewingOrder.shippingAddress?.street && `${viewingOrder.shippingAddress.street}, `}
+                          {viewingOrder.shippingAddress?.city && `${viewingOrder.shippingAddress.city}, `}
+                          {viewingOrder.shippingAddress?.state && `${viewingOrder.shippingAddress.state} - `}
+                          {viewingOrder.shippingAddress?.zipCode && `${viewingOrder.shippingAddress.zipCode}, `}
+                          {viewingOrder.shippingAddress?.country || 'India'}
+                        </p>
+                      </div>
+
+                      {/* Order Items */}
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground mb-3 block">Order Items</Label>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Product Name</TableHead>
+                              <TableHead>Quantity</TableHead>
+                              <TableHead>Price</TableHead>
+                              <TableHead>Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {viewingOrder.items?.map((item: any, index: number) => (
+                              <TableRow key={index}>
+                                <TableCell>
+                                  <div className="font-medium">{item.productName}</div>
+                                </TableCell>
+                                <TableCell>{item.quantity}</TableCell>
+                                <TableCell>₹{item.price.toLocaleString()}</TableCell>
+                                <TableCell>₹{item.total.toLocaleString()}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Order Summary */}
+                      <div className="border-t pt-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <Label className="text-sm font-medium">Total Amount</Label>
+                          <p className="text-lg font-bold">₹{viewingOrder.totalAmount.toLocaleString()}</p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Label className="text-sm font-medium">Order Status</Label>
+                          <Badge variant={viewingOrder.status === "Confirmed" ? "default" : "secondary"}>
+                            {viewingOrder.status}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {viewingOrder.notes && (
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+                          <p className="text-sm mt-1">{viewingOrder.notes}</p>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end">
+                        <Button onClick={() => setIsViewOrderDialogOpen(false)}>
+                          Close
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Received Quotations Tab */}
+              {activeSubSection === "received-quotations" && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Received Quotations</CardTitle>
+                      <div className="flex items-center space-x-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input
+                            placeholder="Search quotations..."
+                            value={quotationSearchTerm}
+                            onChange={(e) => setQuotationSearchTerm(e.target.value)}
+                            className="pl-10 w-64"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Quotation No</TableHead>
+                          <TableHead>Customer Name</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Items</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8">
+                              Loading quotations...
+                            </TableCell>
+                          </TableRow>
+                        ) : quotations.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8">
+                              <div className="text-muted-foreground">
+                                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>No quotations found</p>
+                                <p className="text-sm">Quotation requests from customers will appear here</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          quotations
+                            .filter((quotation: any) => 
+                              quotation.quotationNo.toLowerCase().includes(quotationSearchTerm.toLowerCase()) ||
+                              quotation.customerName.toLowerCase().includes(quotationSearchTerm.toLowerCase())
+                            )
+                            .map((quotation: any) => (
+                              <TableRow key={quotation._id}>
+                                <TableCell>
+                                  <div className="font-medium">#{quotation.quotationNo}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium">{quotation.customerName}</div>
+                                  <div className="text-sm text-muted-foreground">{quotation.customerEmail}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm">{quotation.companyName || '-'}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm">{quotation.customerPhone}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm">{quotation.items?.length || 0} items</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm">
+                                    {new Date(quotation.createdAt).toLocaleDateString()}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {new Date(quotation.createdAt).toLocaleTimeString()}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={quotation.status === "Quoted" ? "default" : "secondary"}>
+                                    {quotation.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Select
+                                      value={quotation.status}
+                                      onValueChange={(value) => updateQuotationStatus(quotation._id, value)}
+                                    >
+                                      <SelectTrigger className="w-32 h-8">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Pending">Pending</SelectItem>
+                                        <SelectItem value="Reviewing">Reviewing</SelectItem>
+                                        <SelectItem value="Quoted">Quoted</SelectItem>
+                                        <SelectItem value="Accepted">Accepted</SelectItem>
+                                        <SelectItem value="Rejected">Rejected</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm">
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleViewQuotation(quotation)}>
+                                          <Eye className="h-4 w-4 mr-2" />
+                                          View Complete Details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => deleteQuotation(quotation._id)}>
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete Quotation
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* View Complete Quotation Dialog */}
+              <Dialog open={isViewQuotationDialogOpen} onOpenChange={setIsViewQuotationDialogOpen}>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Quotation Details - #{viewingQuotation?.quotationNo}</DialogTitle>
+                  </DialogHeader>
+                  {viewingQuotation && (
+                    <div className="space-y-6">
+                      {/* Customer Info */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Customer Name</Label>
+                          <p className="text-sm font-medium mt-1">{viewingQuotation.customerName}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Quotation Date</Label>
+                          <p className="text-sm mt-1">{new Date(viewingQuotation.createdAt).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                          <p className="text-sm mt-1">{viewingQuotation.customerEmail}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
+                          <p className="text-sm mt-1">{viewingQuotation.customerPhone}</p>
+                        </div>
+                        {viewingQuotation.companyName && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Company Name</Label>
+                            <p className="text-sm mt-1">{viewingQuotation.companyName}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Customer Address */}
+                      {viewingQuotation.customerAddress && (
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Address</Label>
+                          <p className="text-sm mt-1">
+                            {viewingQuotation.customerAddress?.street && `${viewingQuotation.customerAddress.street}, `}
+                            {viewingQuotation.customerAddress?.city && `${viewingQuotation.customerAddress.city}, `}
+                            {viewingQuotation.customerAddress?.state && `${viewingQuotation.customerAddress.state} - `}
+                            {viewingQuotation.customerAddress?.zipCode && `${viewingQuotation.customerAddress.zipCode}, `}
+                            {viewingQuotation.customerAddress?.country || 'India'}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Quotation Items */}
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground mb-3 block">Requested Items</Label>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Product Name</TableHead>
+                              <TableHead>Quantity</TableHead>
+                              <TableHead>Specifications</TableHead>
+                              <TableHead>Notes</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {viewingQuotation.items?.map((item: any, index: number) => (
+                              <TableRow key={index}>
+                                <TableCell>
+                                  <div className="font-medium">{item.productName}</div>
+                                </TableCell>
+                                <TableCell>{item.quantity}</TableCell>
+                                <TableCell>
+                                  <div className="text-sm max-w-xs">{item.specifications || '-'}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm max-w-xs">{item.additionalNotes || '-'}</div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Message from Customer */}
+                      {viewingQuotation.message && (
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Customer Message</Label>
+                          <p className="text-sm mt-1 p-3 bg-muted rounded-md">{viewingQuotation.message}</p>
+                        </div>
+                      )}
+
+                      {/* Quotation Summary */}
+                      <div className="border-t pt-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <Label className="text-sm font-medium">Estimated Value</Label>
+                          <p className="text-lg font-bold">
+                            {viewingQuotation.totalEstimatedValue 
+                              ? `₹${viewingQuotation.totalEstimatedValue.toLocaleString()}` 
+                              : 'To be quoted'}
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Label className="text-sm font-medium">Status</Label>
+                          <Badge variant={viewingQuotation.status === "Quoted" ? "default" : "secondary"}>
+                            {viewingQuotation.status}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {viewingQuotation.adminNotes && (
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Admin Notes</Label>
+                          <p className="text-sm mt-1">{viewingQuotation.adminNotes}</p>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end">
+                        <Button onClick={() => setIsViewQuotationDialogOpen(false)}>
+                          Close
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  )
+}
