@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   description:
     "One-stop B2B marketplace for office stationery, IT support, cleaning services, furniture, and business solutions",
   generator: "v0.app",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/logo.png",
+  },
 }
 
 export default function RootLayout({

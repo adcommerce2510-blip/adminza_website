@@ -3,16 +3,20 @@ import { MapPin, Phone, Mail } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="bg-card border-t">
+    <footer className="bg-gradient-to-br from-primary/5 to-accent/5 border-t border-primary/20">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">A</span>
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-14 h-14 flex items-center justify-center">
+                <img 
+                  src="/logo.png" 
+                  alt="Adminza Logo" 
+                  className="w-full h-full object-contain"
+                />
               </div>
-              <span className="text-xl font-bold">Adminza</span>
+              <span className="text-xl font-bold text-primary">Adminza</span>
             </div>
             <p className="text-muted-foreground mb-4">
               Your trusted B2B marketplace for office infrastructure, IT services, and business solutions.
@@ -127,7 +131,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t mt-8 pt-8 text-center text-muted-foreground">
+        <div className="border-t border-primary/20 mt-8 pt-8 text-center text-muted-foreground">
           <p>&copy; 2025 Adminza. All rights reserved.</p>
         </div>
       </div>

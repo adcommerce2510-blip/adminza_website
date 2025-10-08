@@ -1,8 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { ProductGrid } from "@/components/product-grid"
-import { CategoryFilter } from "@/components/category-filter"
-import { SearchFilters } from "@/components/search-filters"
 
 export default function CategoriesPage() {
   return (
@@ -15,15 +13,7 @@ export default function CategoriesPage() {
             <p className="text-muted-foreground">Browse our complete range of business products and services</p>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-8">
-            <aside className="lg:w-64 flex-shrink-0">
-              <CategoryFilter />
-              <SearchFilters />
-            </aside>
-            <div className="flex-1">
-              <ProductGrid />
-            </div>
-          </div>
+          <ProductGrid />
         </div>
       </main>
       <Footer />

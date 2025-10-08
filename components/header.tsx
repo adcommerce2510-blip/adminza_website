@@ -9,7 +9,9 @@ import { NavigationDropdown } from "./navigation-dropdown"
 const navigationData = [
   {
     title: "Office Stationery",
+    href: "/office-stationery",
     subcategories: [
+      { name: "View All Products", href: "/office-stationery" },
       { 
         name: "Paper Products & Writing Materials", 
         href: "/categories/office-stationery/paper-writing-materials",
@@ -259,37 +261,41 @@ const navigationData = [
 export function Header() {
   return (
     <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b shadow-sm">
-      <div className="bg-primary text-primary-foreground">
+      <div className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/20">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-10 text-sm">
+          <div className="flex items-center justify-between py-3 text-sm">
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <Phone className="h-3 w-3" />
-                <span>+91 98765 43210</span>
+              <div className="flex items-center space-x-2 text-primary">
+                <Phone className="h-4 w-4" />
+                <span className="font-medium">+91 98765 43210</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Mail className="h-3 w-3" />
-                <span>support@adminza.com</span>
+              <div className="flex items-center space-x-2 text-primary">
+                <Mail className="h-4 w-4" />
+                <span className="font-medium">support@adminza.com</span>
               </div>
             </div>
-            <div className="hidden md:flex items-center space-x-4 text-xs">
-              <span>Free shipping on orders above ₹5,000</span>
+            <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
+              <span className="font-medium">Free shipping on orders above ₹5,000</span>
               <span>•</span>
-              <span>24/7 Customer Support</span>
+              <span className="font-medium">24/7 Customer Support</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center space-x-3 hover-lift">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-primary-foreground font-bold text-xl">A</span>
+            <div className="w-32 h-32 flex items-center justify-center">
+              <img 
+                src="/logo.png" 
+                alt="Adminza Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
-              <span className="text-2xl font-bold gradient-text">Adminza</span>
-              <div className="text-xs text-muted-foreground -mt-1">Business Solutions</div>
+              <span className="text-2xl font-bold text-gray-900">Adminza</span>
+              <div className="text-xs text-gray-600 -mt-1">Business Solutions</div>
             </div>
           </Link>
 
