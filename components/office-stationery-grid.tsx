@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Star, ShoppingCart, Heart, Package, TrendingUp, Search } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
+import { Toast, useToast } from "@/components/toast"
 
 const stationeryProducts = [
   {
@@ -79,9 +80,14 @@ const stationeryProducts = [
 export function OfficeStationeryGrid() {
   const [favorites, setFavorites] = useState<number[]>([])
   const [sortBy, setSortBy] = useState("relevance")
+  const { toasts, showToast, hideToast } = useToast()
 
   const toggleFavorite = (productId: number) => {
     setFavorites((prev) => (prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]))
+  }
+
+  const handleAddToCart = (productName: string) => {
+    showToast(`${productName} added to cart!`)
   }
 
   const sortedProducts = [...stationeryProducts].sort((a, b) => {
@@ -252,7 +258,10 @@ export function OfficeStationeryGrid() {
                 )}
               </div>
 
-              <Button className="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 rounded-md transition-colors">
+              <Button 
+                className="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 rounded-md transition-colors"
+                onClick={() => handleAddToCart(product.name)}
+              >
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Add
               </Button>
@@ -267,6 +276,16 @@ export function OfficeStationeryGrid() {
           Load More Products
         </Button>
       </div>
+
+      {/* Toast Notifications */}
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          isVisible={toast.isVisible}
+          onClose={() => hideToast(toast.id)}
+        />
+      ))}
     </div>
   )
 }

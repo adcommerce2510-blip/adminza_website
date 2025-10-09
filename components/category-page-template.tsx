@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Star, ShoppingCart, Heart, Package, TrendingUp, Phone, Mail, Search } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
+import { Toast, useToast } from "@/components/toast"
 
 interface Product {
   id: number
@@ -38,6 +39,7 @@ export function CategoryPageTemplate({
 }: CategoryPageTemplateProps) {
   const [favorites, setFavorites] = useState<number[]>([])
   const [sortBy, setSortBy] = useState("relevance")
+  const { toasts, showToast, hideToast } = useToast()
 
   const toggleFavorite = (productId: number) => {
     setFavorites((prev) => 
@@ -45,6 +47,10 @@ export function CategoryPageTemplate({
         ? prev.filter((id) => id !== productId) 
         : [...prev, productId]
     )
+  }
+
+  const handleAddToCart = (productName: string) => {
+    showToast(`${productName} added to cart!`)
   }
 
   const sortedProducts = [...products].sort((a, b) => {
@@ -233,7 +239,10 @@ export function CategoryPageTemplate({
                     )}
                   </div>
 
-                  <Button className="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 rounded-md transition-colors">
+                  <Button 
+                    className="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 rounded-md transition-colors"
+                    onClick={() => handleAddToCart(product.name)}
+                  >
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Add
                   </Button>
@@ -267,6 +276,16 @@ export function CategoryPageTemplate({
           </div>
         </Card>
       )}
+
+      {/* Toast Notifications */}
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          isVisible={toast.isVisible}
+          onClose={() => hideToast(toast.id)}
+        />
+      ))}
     </div>
   )
 }

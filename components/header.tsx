@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Search, ShoppingCart, User, Menu, Phone, Mail } from "lucide-react"
 import Link from "next/link"
 import { NavigationDropdown } from "./navigation-dropdown"
+import { AnimatedWrapper } from "./animated-wrapper"
 
 const navigationData = [
   {
@@ -260,8 +261,9 @@ const navigationData = [
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b shadow-sm">
-      <div className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/20">
+    <header className="sticky top-0 z-50 header-premium shadow-lg">
+      <div className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/20 relative">
+        <div className="header-particles"></div>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-3 text-sm">
             <div className="flex items-center space-x-6">
@@ -285,55 +287,65 @@ export function Header() {
 
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          <Link href="/" className="flex items-center space-x-3 hover-lift">
-            <div className="w-32 h-32 flex items-center justify-center">
-              <img 
-                src="/logo.png" 
-                alt="Adminza Logo" 
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <span className="text-2xl font-bold text-gray-900">Adminza</span>
-              <div className="text-xs text-gray-600 -mt-1">Business Solutions</div>
-            </div>
-          </Link>
+          <AnimatedWrapper animation="fade-in-left">
+            <Link href="/" className="flex items-center space-x-3 logo-premium">
+              <div className="w-32 h-32 flex items-center justify-center">
+                <img 
+                  src="/logo.png" 
+                  alt="Adminza Logo" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div>
+                <span className="text-2xl font-bold text-gray-900">Adminza</span>
+                <div className="text-xs text-gray-600 -mt-1">Business Solutions</div>
+              </div>
+            </Link>
+          </AnimatedWrapper>
 
-          <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-              <Input
-                placeholder="Search for products, services, or vendors..."
-                className="pl-12 pr-4 h-12 text-base border-2 border-border focus:border-primary transition-colors duration-200 rounded-xl"
-              />
-              <Button size="sm" className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-lg">
-                Search
+          <AnimatedWrapper animation="fade-in-down" delay={200}>
+            <div className="hidden md:flex flex-1 max-w-4xl mx-8">
+              <div className="flex w-full items-center bg-white/15 backdrop-blur-sm rounded-2xl border-2 border-primary/30 overflow-hidden shadow-lg hover:border-primary/50 transition-all duration-300">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 z-10" />
+                  <Input
+                    placeholder="Search for products, services, or vendors..."
+                    className="pl-12 pr-4 h-12 text-base bg-transparent border-0 focus:ring-0 focus:outline-none w-full placeholder:text-gray-500"
+                  />
+                </div>
+                <Button size="sm" className="rounded-l-none rounded-r-2xl button-premium px-6 h-12 text-sm font-medium flex-shrink-0">
+                  Search
+                </Button>
+              </div>
+            </div>
+          </AnimatedWrapper>
+
+          <AnimatedWrapper animation="fade-in-right" delay={400}>
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="icon" className="hidden md:flex hover-lift rounded-xl hover-bounce button-premium">
+                <User className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="hover-lift rounded-xl relative cart-premium">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-badge-premium">
+                  3
+                </span>
+              </Button>
+              <Button variant="ghost" size="icon" className="lg:hidden hover-lift rounded-xl hover-bounce button-premium">
+                <Menu className="h-5 w-5" />
               </Button>
             </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" className="hidden md:flex hover-lift rounded-xl">
-              <User className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="hover-lift rounded-xl relative">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                3
-              </span>
-            </Button>
-            <Button variant="ghost" size="icon" className="lg:hidden hover-lift rounded-xl">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </div>
+          </AnimatedWrapper>
         </div>
       </div>
 
-      <div className="border-t bg-card">
-        <div className="w-full px-4">
-          <nav className="hidden lg:flex items-center justify-start space-x-0 h-16">
+      <div className="border-t bg-card relative overflow-visible">
+        <div className="w-full px-4 overflow-visible">
+          <nav className="hidden lg:flex items-center justify-start space-x-0 h-16 overflow-visible">
             {navigationData.map((item, index) => (
-              <NavigationDropdown key={index} title={item.title} subcategories={item.subcategories} />
+              <div key={index} className="relative overflow-visible">
+                <NavigationDropdown title={item.title} subcategories={item.subcategories} />
+              </div>
             ))}
           </nav>
         </div>

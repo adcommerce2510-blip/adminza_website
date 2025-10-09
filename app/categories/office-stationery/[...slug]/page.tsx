@@ -39,20 +39,12 @@ export default function OfficeStationerySlugPage({ params }: { params: { slug: s
       <Header />
       <main className="py-8">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col lg:flex-row gap-8">
-            <aside className="lg:w-64 flex-shrink-0">
-              <CategoryFilter />
-              <SearchFilters />
-            </aside>
-            <div className="flex-1">
-              <CategoryPageTemplate
-                title={categoryName.charAt(0).toUpperCase() + categoryName.slice(1)}
-                description={`Explore our range of ${categoryName} products for your office needs.`}
-                products={sampleProducts}
-                categoryType="product"
-              />
-            </div>
-          </div>
+          <CategoryPageTemplate
+            title={categoryName.charAt(0).toUpperCase() + categoryName.slice(1)}
+            description={`Explore our range of ${categoryName} products for your office needs.`}
+            products={sampleProducts}
+            categoryType="product"
+          />
         </div>
       </main>
       <Footer />
