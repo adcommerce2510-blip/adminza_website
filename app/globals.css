@@ -1134,3 +1134,64 @@
     }
   }
 }
+
+/* Cart Dropdown Positioning */
+.cart-dropdown-container {
+  position: relative !important;
+  z-index: 999999 !important;
+}
+
+.cart-dropdown {
+  position: fixed !important;
+  z-index: 999999 !important;
+  margin-top: 8px !important;
+}
+
+/* Ensure cart dropdown appears above everything */
+header {
+  position: relative !important;
+  z-index: 40 !important;
+}
+
+/* Ensure navigation doesn't interfere with cart dropdown */
+nav {
+  z-index: 50 !important;
+}
+
+/* Force cart dropdown to appear above navigation */
+.cart-dropdown {
+  position: absolute !important;
+  z-index: 999999 !important;
+  top: 100% !important;
+  right: 0 !important;
+}
+
+/* Ensure navigation bar stays below cart dropdown */
+.border-t.bg-card {
+  z-index: 10 !important;
+}
+
+nav {
+  z-index: 10 !important;
+}
+
+/* Force cart dropdown to highest priority */
+.cart-dropdown-container .cart-dropdown {
+  z-index: 999999 !important;
+  position: absolute !important;
+}
+
+/* Override any conflicting z-index rules */
+[class*="cart-dropdown"] {
+  z-index: 999999 !important;
+}
+
+/* Ensure cart dropdown is above all header elements */
+header .cart-dropdown-container {
+  z-index: 999999 !important;
+}
+
+header .cart-dropdown-container .cart-dropdown {
+  z-index: 999999 !important;
+  position: absolute !important;
+}

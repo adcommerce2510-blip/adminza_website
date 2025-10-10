@@ -6,6 +6,8 @@ import { Search, ShoppingCart, User, Menu, Phone, Mail } from "lucide-react"
 import Link from "next/link"
 import { NavigationDropdown } from "./navigation-dropdown"
 import { AnimatedWrapper } from "./animated-wrapper"
+import { CartDropdown } from "./cart-dropdown"
+import { useState, useRef } from "react"
 
 const navigationData = [
   {
@@ -260,8 +262,11 @@ const navigationData = [
 ]
 
 export function Header() {
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  const cartButtonRef = useRef<HTMLButtonElement>(null)
+
   return (
-    <header className="sticky top-0 z-50 header-premium shadow-lg">
+    <header className="sticky top-0 z-40 header-premium shadow-lg">
       <div className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/20 relative">
         <div className="header-particles"></div>
         <div className="container mx-auto px-4">
@@ -325,12 +330,29 @@ export function Header() {
               <Button variant="ghost" size="icon" className="hidden md:flex hover-lift rounded-xl hover-bounce button-premium">
                 <User className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover-lift rounded-xl relative cart-premium">
-                <ShoppingCart className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-badge-premium">
-                  3
-                </span>
-              </Button>
+              
+              {/* Cart Button with Dropdown */}
+              <div 
+                className="cart-dropdown-container"
+                onMouseEnter={() => setIsCartOpen(true)}
+                onMouseLeave={() => setIsCartOpen(false)}
+              >
+                <Button 
+                  ref={cartButtonRef}
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover-lift rounded-xl relative cart-premium"
+                  onClick={() => setIsCartOpen(!isCartOpen)}
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-badge-premium">
+                    1
+                  </span>
+                </Button>
+                
+                <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} triggerRef={cartButtonRef} />
+              </div>
+              
               <Button variant="ghost" size="icon" className="lg:hidden hover-lift rounded-xl hover-bounce button-premium">
                 <Menu className="h-5 w-5" />
               </Button>
