@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input"
 import { Search, ShoppingCart, User, Menu, Phone, Mail } from "lucide-react"
 import Link from "next/link"
 import { NavigationDropdown } from "./navigation-dropdown"
-import { AnimatedWrapper } from "./animated-wrapper"
 import { CartDropdown } from "./cart-dropdown"
 import { useState, useRef } from "react"
 
@@ -266,9 +265,8 @@ export function Header() {
   const cartButtonRef = useRef<HTMLButtonElement>(null)
 
   return (
-    <header className="sticky top-0 z-40 header-premium shadow-lg">
+    <header className="sticky top-0 z-40 shadow-lg">
       <div className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/20 relative">
-        <div className="header-particles"></div>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-3 text-sm">
             <div className="flex items-center space-x-6">
@@ -292,8 +290,7 @@ export function Header() {
 
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          <AnimatedWrapper animation="fade-in-left">
-            <Link href="/" className="flex items-center space-x-3 logo-premium">
+          <Link href="/" className="flex items-center space-x-3">
               <div className="w-32 h-32 flex items-center justify-center">
                 <img 
                   src="/logo.png" 
@@ -306,10 +303,8 @@ export function Header() {
                 <div className="text-xs text-gray-600 -mt-1">Business Solutions</div>
               </div>
             </Link>
-          </AnimatedWrapper>
 
-          <AnimatedWrapper animation="fade-in-down" delay={200}>
-            <div className="hidden md:flex flex-1 max-w-4xl mx-8">
+          <div className="hidden md:flex flex-1 max-w-4xl mx-8">
               <div className="flex w-full items-center bg-white/15 backdrop-blur-sm rounded-2xl border-2 border-primary/30 overflow-hidden shadow-lg hover:border-primary/50 transition-all duration-300">
                 <div className="flex-1 relative">
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 z-10" />
@@ -318,16 +313,14 @@ export function Header() {
                     className="pl-12 pr-4 h-12 text-base bg-transparent border-0 focus:ring-0 focus:outline-none w-full placeholder:text-gray-500"
                   />
                 </div>
-                <Button size="sm" className="rounded-l-none rounded-r-2xl button-premium px-6 h-12 text-sm font-medium flex-shrink-0">
+                <Button size="sm" className="rounded-l-none rounded-r-2xl px-6 h-12 text-sm font-medium flex-shrink-0">
                   Search
                 </Button>
               </div>
             </div>
-          </AnimatedWrapper>
 
-          <AnimatedWrapper animation="fade-in-right" delay={400}>
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon" className="hidden md:flex hover-lift rounded-xl hover-bounce button-premium">
+          <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="icon" className="hidden md:flex">
                 <User className="h-5 w-5" />
               </Button>
               
@@ -341,11 +334,11 @@ export function Header() {
                   ref={cartButtonRef}
                   variant="ghost" 
                   size="icon" 
-                  className="hover-lift rounded-xl relative cart-premium"
+                  className="rounded-xl relative"
                   onClick={() => setIsCartOpen(!isCartOpen)}
                 >
                   <ShoppingCart className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-badge-premium">
+                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center bg-red-500">
                     1
                   </span>
                 </Button>
@@ -353,11 +346,10 @@ export function Header() {
                 <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} triggerRef={cartButtonRef} />
               </div>
               
-              <Button variant="ghost" size="icon" className="lg:hidden hover-lift rounded-xl hover-bounce button-premium">
+              <Button variant="ghost" size="icon" className="lg:hidden">
                 <Menu className="h-5 w-5" />
               </Button>
             </div>
-          </AnimatedWrapper>
         </div>
       </div>
 
