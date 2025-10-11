@@ -191,7 +191,7 @@ export function ProductGrid() {
                 )}
               </div>
 
-              <Button className="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 rounded-md transition-colors">
+              <Button className="w-full text-white text-sm font-medium py-2 rounded-md transition-colors" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}>
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Add
               </Button>

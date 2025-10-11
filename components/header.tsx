@@ -298,8 +298,8 @@ export function Header() {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <div>
-                <span className="text-2xl font-bold text-gray-900">Adminza</span>
+              <div className="flex flex-col items-start -ml-6">
+                <span className="text-2xl font-bold bg-clip-text text-transparent" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)', WebkitBackgroundClip: 'text'}}>Adminza.in</span>
                 <div className="text-xs text-gray-600 -mt-1">Business Solutions</div>
               </div>
             </Link>

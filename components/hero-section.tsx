@@ -111,7 +111,8 @@ export function HeroSection() {
             <Link href="/categories">
               <Button
                 size="lg"
-                className="text-lg px-10 py-4 rounded-xl hover-lift shadow-lg bg-gradient-to-r from-primary to-accent hover:shadow-primary/25"
+                className="text-lg px-10 py-4 rounded-xl hover-lift shadow-lg text-white font-bold"
+                style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}
               >
                 Explore Categories
                 <ArrowRight className="ml-2 h-5 w-5" />

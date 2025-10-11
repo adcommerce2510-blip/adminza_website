@@ -151,7 +151,7 @@ export function CartDropdown({ isOpen, onClose, triggerRef }: CartDropdownProps)
                 </Button>
               </Link>
               <Link href="/checkout" className="flex-1">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                <Button className="w-full text-white" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}>
                   Checkout
                 </Button>
               </Link>

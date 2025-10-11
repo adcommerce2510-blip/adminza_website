@@ -44,7 +44,7 @@ export default function HomePage() {
                 </AnimatedWrapper>
                 <AnimatedWrapper animation="fade-in-up" delay={400}>
                   <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                    Your Trusted <span className="gradient-text">Business Partner</span>
+                    Your Trusted <span className="gradient-text bg-clip-text text-transparent" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)', WebkitBackgroundClip: 'text'}}>Business Partner</span>
                   </h2>
                 </AnimatedWrapper>
                 <AnimatedWrapper animation="fade-in-up" delay={600}>
@@ -147,7 +147,7 @@ export default function HomePage() {
             <AnimatedWrapper animation="fade-in-down">
               <div className="text-center max-w-4xl mx-auto mb-20">
                 <AnimatedWrapper animation="scale-in" delay={200}>
-                  <Badge className="mb-6 px-4 py-2 bg-white/80 backdrop-blur-sm border-2 border-primary/20 text-primary font-semibold rounded-full hover-bounce how-it-works-badge">
+                  <Badge className="mb-6 px-4 py-2 text-white font-semibold rounded-full hover-bounce how-it-works-badge" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}>
                     <ArrowRight className="w-4 h-4 mr-2" />
                     Simple Process
                   </Badge>
@@ -195,7 +195,7 @@ export default function HomePage() {
                 <div key={index} className="relative how-it-works-step">
                   <div className="text-center relative">
                     {/* Step number circle */}
-                    <div className="w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-teal-500 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-2xl how-it-works-circle relative overflow-hidden">
+                    <div className="w-24 h-24 mx-auto mb-8 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-2xl how-it-works-circle relative overflow-hidden" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}>
                       <span className="relative z-10">{step.step}</span>
                       <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-full"></div>
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-white/20 rounded-full animate-pulse"></div>
@@ -213,8 +213,8 @@ export default function HomePage() {
                   
                   {/* Connecting line */}
                   {index < 3 && (
-                    <div className="hidden md:block absolute top-12 left-[75%] w-[50%] h-1 bg-gradient-to-r from-teal-400 via-blue-400 to-indigo-400 rounded-full opacity-40 how-it-works-line">
-                      <div className="absolute inset-0 bg-gradient-to-r from-teal-400 via-blue-400 to-indigo-400 rounded-full animate-pulse opacity-60"></div>
+                    <div className="hidden md:block absolute top-12 left-[75%] w-[50%] h-1 rounded-full opacity-40 how-it-works-line" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}>
+                      <div className="absolute inset-0 rounded-full animate-pulse opacity-60" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}></div>
                     </div>
                   )}
                 </div>
@@ -224,7 +224,7 @@ export default function HomePage() {
             <AnimatedWrapper animation="fade-in-up" delay={800}>
               <div className="text-center mt-16">
                 <Link href="/categories">
-                  <Button size="lg" className="text-xl px-12 py-6 rounded-2xl bg-gradient-to-r from-teal-500 via-blue-500 to-indigo-600 hover:from-teal-600 hover:via-blue-600 hover:to-indigo-700 text-white font-bold shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105 how-it-works-button">
+                  <Button size="lg" className="text-xl px-12 py-6 rounded-2xl text-white font-bold shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105 how-it-works-button" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}>
                     Get Started Now
                     <ArrowRight className="ml-3 h-6 w-6 animate-bounce" />
                   </Button>
@@ -247,14 +247,14 @@ export default function HomePage() {
             <AnimatedWrapper animation="fade-in-down">
               <div className="text-center max-w-4xl mx-auto mb-20">
                 <AnimatedWrapper animation="scale-in" delay={200}>
-                  <Badge className="mb-6 px-4 py-2 bg-white/90 backdrop-blur-sm border-2 border-primary/20 text-primary font-semibold rounded-full hover-bounce testimonials-badge">
+                  <Badge className="mb-6 px-4 py-2 text-white font-semibold rounded-full hover-bounce testimonials-badge" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}>
                     <Star className="w-4 h-4 mr-2" />
                     Testimonials
                   </Badge>
                 </AnimatedWrapper>
                 <AnimatedWrapper animation="fade-in-up" delay={400}>
                   <h2 className="text-5xl md:text-6xl font-bold mb-8 leading-tight">
-                    What Our <span className="gradient-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">Customers Say</span>
+                    What Our <span className="gradient-text bg-clip-text text-transparent" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)', WebkitBackgroundClip: 'text'}}>Customers Say</span>
                   </h2>
                 </AnimatedWrapper>
                 <AnimatedWrapper animation="fade-in-up" delay={600}>
@@ -329,32 +329,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Call to Action Section */}
-        <section className="py-20 bg-gradient-to-r from-primary to-accent text-primary-foreground">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                Ready to Transform Your Business?
-              </h2>
-              <p className="text-xl mb-10 opacity-90">
-                Join thousands of businesses already using Adminza for their office needs.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/categories">
-                  <Button size="lg" variant="secondary" className="text-lg px-10 py-4 rounded-xl">
-                    Explore Products
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link href="/vendors">
-                  <Button size="lg" variant="outline" className="text-lg px-10 py-4 rounded-xl bg-white/10 border-white/30 hover:bg-white/20 text-white">
-                    Become a Vendor
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
       <Footer />
     </div>

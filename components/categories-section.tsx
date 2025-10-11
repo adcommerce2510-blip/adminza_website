@@ -155,7 +155,7 @@ export function CategoriesSection() {
             </AnimatedWrapper>
             
             <AnimatedWrapper animation="fade-in-up" delay={400}>
-              <h2 className="text-4xl md:text-6xl font-bold mb-8 gradient-text relative">
+              <h2 className="text-4xl md:text-6xl font-bold mb-8 bg-clip-text text-transparent relative" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)', WebkitBackgroundClip: 'text'}}>
                 Explore All Categories
                 <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-full opacity-20 animate-bounce"></div>
               </h2>
@@ -204,7 +204,7 @@ export function CategoriesSection() {
                     </div>
 
                     {/* Button */}
-                    <Button className="w-fit bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:shadow-lg category-button-premium">
+                    <Button className="w-fit text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:shadow-lg category-button-premium" style={{background: 'linear-gradient(135deg, #000000 0%, #0300ff 100%)'}}>
                       {card.buttonText}
                       <ArrowRightIcon className="ml-2 h-3 w-3" />
                     </Button>
