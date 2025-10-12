@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -177,6 +178,7 @@ export function DashboardPage() {
     customerId: "",
     customerName: "",
     quantity: "",
+    price: 0,
     notes: ""
   })
   const [eshopSearchTerm, setEshopSearchTerm] = useState("")
@@ -194,6 +196,35 @@ export function DashboardPage() {
   const [quotationSearchTerm, setQuotationSearchTerm] = useState("")
   const [isViewQuotationDialogOpen, setIsViewQuotationDialogOpen] = useState(false)
   const [viewingQuotation, setViewingQuotation] = useState<any>(null)
+  const [isViewProductDetailsDialogOpen, setIsViewProductDetailsDialogOpen] = useState(false)
+  const [viewingProductDetails, setViewingProductDetails] = useState<any>(null)
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
+  const [openOrderDropdownId, setOpenOrderDropdownId] = useState<string | null>(null)
+  const [isEditOrderDialogOpen, setIsEditOrderDialogOpen] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<any>(null)
+  const [orderEditForm, setOrderEditForm] = useState({
+    customerName: "",
+    customerPhone: "",
+    shippingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "India"
+    },
+    totalAmount: 0,
+    status: "",
+    items: [] as any[]
+  })
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editForm, setEditForm] = useState({
+    quantity: "",
+    price: 0,
+    notes: ""
+  })
+  const [customerProducts, setCustomerProducts] = useState<any[]>([])
+  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null)
+  const [isRetopUpMode, setIsRetopUpMode] = useState(false)
 
   // Get categories for products (main categories with mainUse = "product")
   const productCategories = categories
@@ -290,6 +321,21 @@ export function DashboardPage() {
       return []
     } catch (error) {
       console.error('Error fetching categories:', error)
+      return []
+    }
+  }
+
+  // Fetch customers
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch('/api/customers')
+      if (response.ok) {
+        const data = await response.json()
+        return data.success ? data.data : []
+      }
+      return []
+    } catch (error) {
+      console.error('Error fetching customers:', error)
       return []
     }
   }
@@ -568,21 +614,6 @@ export function DashboardPage() {
     setIsLevel2CategoryDialogOpen(true)
   }
 
-  // Fetch customers
-  const fetchCustomers = async () => {
-    try {
-      const response = await fetch('/api/customers')
-      if (response.ok) {
-        const data = await response.json()
-        return data.success ? data.data : []
-      }
-      return []
-    } catch (error) {
-      console.error('Error fetching customers:', error)
-      return []
-    }
-  }
-
   // Create customer
   const createCustomer = async (customerData: any) => {
     try {
@@ -645,69 +676,6 @@ export function DashboardPage() {
     }
   }
 
-  // Handle customer form submission
-  const handleCustomerSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      if (editingCustomer) {
-        const result = await updateCustomer(editingCustomer._id, customerForm)
-        if (result.success) {
-          setCustomers(customers.map((c: any) => c._id === editingCustomer._id ? result.data : c))
-          setIsCustomerDialogOpen(false)
-          setEditingCustomer(null)
-          setCustomerForm({ name: "", email: "", phone: "", password: "", address: "", city: "", state: "", zipCode: "", country: "India" })
-        } else {
-          alert('Error updating customer: ' + result.error)
-        }
-      } else {
-        const result = await createCustomer(customerForm)
-        if (result.success) {
-          setCustomers([...customers, result.data])
-          setIsCustomerDialogOpen(false)
-          setCustomerForm({ name: "", email: "", phone: "", password: "", address: "", city: "", state: "", zipCode: "", country: "India" })
-        } else {
-          alert('Error creating customer: ' + result.error)
-        }
-      }
-    } catch (error) {
-      console.error('Error saving customer:', error)
-      alert('Error saving customer')
-    }
-  }
-
-  // Handle delete customer
-  const handleDeleteCustomer = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this customer?')) return
-    
-    try {
-      const result = await deleteCustomer(id)
-      if (result.success) {
-        setCustomers(customers.filter((c: any) => c._id !== id))
-      } else {
-        alert('Error deleting customer: ' + result.error)
-      }
-    } catch (error) {
-      console.error('Error deleting customer:', error)
-      alert('Error deleting customer')
-    }
-  }
-
-  // Handle edit customer
-  const handleEditCustomer = (customer: any) => {
-    setEditingCustomer(customer)
-    setCustomerForm({
-      name: customer.name,
-      email: customer.email,
-      phone: customer.phone,
-      password: "", // Don't populate password for security
-      address: customer.address || "",
-      city: customer.city || "",
-      state: customer.state || "",
-      zipCode: customer.zipCode || "",
-      country: customer.country || "India"
-    })
-    setIsCustomerDialogOpen(true)
-  }
 
   // Fetch E-Shop inventory
   const fetchEshopInventory = async () => {
@@ -748,48 +716,30 @@ export function DashboardPage() {
 
   // Handle edit E-Shop item
   const handleEditEshopItem = (item: any) => {
-    setEditingEshopItem(item)
-    setEshopForm({
-      productId: item.productId,
-      productName: item.productName,
-      customerId: item.customerId,
-      customerName: item.customerName,
-      quantity: item.quantity.toString(),
-      notes: item.notes || ""
-    })
+    // Load all products for this customer
+    const customerInventory = eshopInventory.filter((inv: any) => inv.customerId === item.customerId)
+    setCustomerProducts(customerInventory)
+    setEditingCustomerId(item.customerId)
+    setIsRetopUpMode(false) // Not re-top up mode
     setIsEshopDialogOpen(true)
+    setOpenDropdownId(null) // Close dropdown
   }
 
-  // Handle E-Shop form submission
-  const handleEshopSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const result = await updateEshopInventory(editingEshopItem._id, {
-        quantity: parseInt(eshopForm.quantity),
-        notes: eshopForm.notes
-      })
-      
-      if (result.success) {
-        setEshopInventory(eshopInventory.map((item: any) => 
-          item._id === editingEshopItem._id ? result.data : item
-        ))
-        setIsEshopDialogOpen(false)
-        setEditingEshopItem(null)
-        setEshopForm({ productId: "", productName: "", customerId: "", customerName: "", quantity: "", notes: "" })
-      } else {
-        alert('Error updating inventory: ' + result.error)
-      }
-    } catch (error) {
-      console.error('Error saving inventory:', error)
-      alert('Error saving inventory')
-    }
-  }
+  // This function is now defined later (line ~1072) to handle both create and update
 
-  // Handle Re-top up
+  // Handle Re-top up - Opens Edit Manually dialog for adding stock
   const handleRetopUp = (item: any) => {
-    setRetopUpItem(item)
-    setRetopUpQuantity("")
-    setIsRetopUpDialogOpen(true)
+    // Load all products for this customer and update quantities to current remaining stock
+    const customerInventory = eshopInventory.filter((inv: any) => inv.customerId === item.customerId).map((inv: any) => ({
+      ...inv,
+      // Use the current remaining quantity (Total Stock) for re-top up
+      quantity: inv.quantity - (inv.invoicedQuantity || 0)
+    }))
+    setCustomerProducts(customerInventory)
+    setEditingCustomerId(item.customerId)
+    setIsRetopUpMode(true) // Mark as re-top up mode
+    setIsEshopDialogOpen(true)
+    setOpenDropdownId(null) // Close dropdown
   }
 
   // Handle Re-top up submit
@@ -823,6 +773,7 @@ export function DashboardPage() {
     setRecordUsageItem(item)
     setUsedQuantity("")
     setIsRecordUsageDialogOpen(true)
+    setOpenDropdownId(null) // Close dropdown
   }
 
   // Handle Record Usage submit
@@ -924,10 +875,202 @@ export function DashboardPage() {
     }
   }
 
+  // Handle block/unblock customer
+  const handleToggleCustomerStatus = async (customer: any) => {
+    const action = customer.status === 'active' ? 'block' : 'unblock'
+    const confirmMessage = `Are you sure you want to ${action} ${customer.name}?`
+    
+    if (confirm(confirmMessage)) {
+      try {
+        const newStatus = customer.status === 'active' ? 'blocked' : 'active'
+        const response = await fetch(`/api/customers/${customer._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...customer,
+            status: newStatus,
+            isBlocked: newStatus === 'blocked'
+          }),
+        })
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          // Update the customer in the state
+          setCustomers(customers.map((c: any) => 
+            c._id === customer._id 
+              ? { ...c, status: newStatus, isBlocked: newStatus === 'blocked' }
+              : c
+          ))
+          alert(`Customer ${action}ed successfully`)
+        } else {
+          alert(`Error ${action}ing customer: ${result.error}`)
+        }
+      } catch (error) {
+        console.error(`Error ${action}ing customer:`, error)
+        alert(`Error ${action}ing customer`)
+      }
+    }
+  }
+
+  // Handle edit customer
+  const handleEditCustomer = (customer: any) => {
+    setEditingCustomer(customer)
+    setCustomerForm({
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      password: "",
+      address: customer.address || "",
+      city: customer.city || "",
+      state: customer.state || "",
+      zipCode: customer.zipCode || "",
+      country: customer.country || "India"
+    })
+    setIsCustomerDialogOpen(true)
+  }
+
+  // Handle delete customer
+  const handleDeleteCustomer = async (id: string) => {
+    if (confirm('Are you sure you want to delete this customer?')) {
+      try {
+        const response = await fetch(`/api/customers/${id}`, {
+          method: 'DELETE',
+        })
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          setCustomers(customers.filter((customer: any) => customer._id !== id))
+          alert('Customer deleted successfully')
+        } else {
+          alert('Error deleting customer: ' + result.error)
+        }
+      } catch (error) {
+        console.error('Error deleting customer:', error)
+        alert('Error deleting customer')
+      }
+    }
+  }
+
+  // Handle customer form submission
+  const handleCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      if (editingCustomer) {
+        // Update existing customer
+        const response = await fetch(`/api/customers/${editingCustomer._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...editingCustomer,
+            ...customerForm,
+            // Only include password if it's provided
+            ...(customerForm.password && { password: customerForm.password })
+          }),
+        })
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          setCustomers(customers.map((c: any) => 
+            c._id === editingCustomer._id ? result.data : c
+          ))
+          alert('Customer updated successfully')
+        } else {
+          alert('Error updating customer: ' + result.error)
+        }
+      } else {
+        // Create new customer
+        const response = await fetch('/api/customers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(customerForm),
+        })
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          setCustomers([...customers, result.data])
+          alert('Customer created successfully')
+        } else {
+          alert('Error creating customer: ' + result.error)
+        }
+      }
+      
+      // Reset form and close dialog
+      setCustomerForm({ name: "", email: "", phone: "", password: "", address: "", city: "", state: "", zipCode: "", country: "India" })
+      setIsCustomerDialogOpen(false)
+      setEditingCustomer(null)
+    } catch (error) {
+      console.error('Error saving customer:', error)
+      alert('Error saving customer')
+    }
+  }
+
   // View complete order
   const handleViewOrder = (order: any) => {
     setViewingOrder(order)
     setIsViewOrderDialogOpen(true)
+  }
+
+  // Handle edit order
+  const handleEditOrder = (order: any) => {
+    setEditingOrder(order)
+    setOrderEditForm({
+      customerName: order.customerName || "",
+      customerPhone: order.customerPhone || "",
+      shippingAddress: {
+        street: order.shippingAddress?.street || "",
+        city: order.shippingAddress?.city || "",
+        state: order.shippingAddress?.state || "",
+        zipCode: order.shippingAddress?.zipCode || "",
+        country: order.shippingAddress?.country || "India"
+      },
+      totalAmount: order.totalAmount || 0,
+      status: order.status || "Order Placed",
+      items: order.items || []
+    })
+    setIsEditOrderDialogOpen(true)
+  }
+
+  // Handle order edit form submission
+  const handleOrderEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingOrder) return
+
+    try {
+      const response = await fetch(`/api/orders/${editingOrder._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderEditForm),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Update the order in the state
+        setOrders(orders.map((order: any) => 
+          order._id === editingOrder._id ? result.data : order
+        ))
+        alert('Order updated successfully')
+        setIsEditOrderDialogOpen(false)
+        setEditingOrder(null)
+      } else {
+        alert('Error updating order: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error updating order:', error)
+      alert('Error updating order')
+    }
   }
 
   // Fetch quotations
@@ -1001,6 +1144,264 @@ export function DashboardPage() {
     setIsViewQuotationDialogOpen(true)
   }
 
+  // View product details
+  const handleViewProductDetails = (item: any) => {
+    // Load all products for this customer for view details
+    const customerInventory = eshopInventory.filter((inv: any) => inv.customerId === item.customerId)
+    setViewingProductDetails({ 
+      ...item, 
+      allProducts: customerInventory,
+      customerName: item.customerName 
+    })
+    setIsEditMode(false)
+    setIsViewProductDetailsDialogOpen(true)
+    setOpenDropdownId(null) // Close dropdown
+  }
+
+  // Handle delete inventory item
+  const handleDeleteInventoryItem = async (item: any) => {
+    if (!confirm(`Are you sure you want to delete this inventory item for ${item.customerName}?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/eshop-inventory/${item._id}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Remove from state
+        setEshopInventory(eshopInventory.filter((inventory: any) => inventory._id !== item._id))
+        alert('Inventory item deleted successfully')
+        
+        // Close the view details dialog if it's open
+        setIsViewProductDetailsDialogOpen(false)
+      } else {
+        alert('Error deleting inventory item: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error deleting inventory item:', error)
+      alert('Error deleting inventory item')
+    } finally {
+      setOpenDropdownId(null) // Close dropdown
+    }
+  }
+
+  // Toggle dropdown
+  const toggleDropdown = (itemId: string) => {
+    setOpenDropdownId(openDropdownId === itemId ? null : itemId)
+  }
+
+  // Toggle order dropdown
+  const toggleOrderDropdown = (orderId: string) => {
+    setOpenOrderDropdownId(openOrderDropdownId === orderId ? null : orderId)
+  }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenDropdownId(null)
+    }
+    
+    if (openDropdownId) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [openDropdownId])
+
+  // Close order dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenOrderDropdownId(null)
+    }
+    
+    if (openOrderDropdownId) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [openOrderDropdownId])
+
+  // Handle edit mode toggle
+  const handleEditModeToggle = () => {
+    setIsEditMode(!isEditMode)
+  }
+
+  // Handle save changes
+  const handleSaveChanges = async () => {
+    try {
+      const response = await fetch(`/api/eshop-inventory/${viewingProductDetails._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quantity: parseInt(editForm.quantity),
+          price: editForm.price,
+          notes: editForm.notes,
+          lastUpdated: new Date().toISOString()
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Update the viewing product details
+        setViewingProductDetails({
+          ...viewingProductDetails,
+          quantity: parseInt(editForm.quantity),
+          price: editForm.price,
+          notes: editForm.notes,
+          lastUpdated: new Date().toISOString()
+        })
+        
+        // Update the eshop inventory state
+        setEshopInventory(eshopInventory.map((item: any) =>
+          item._id === viewingProductDetails._id ? result.data : item
+        ))
+        
+        setIsEditMode(false)
+        alert('Changes saved successfully')
+      } else {
+        alert('Error saving changes: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error saving changes:', error)
+      alert('Error saving changes')
+    }
+  }
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setEditForm({
+      quantity: viewingProductDetails.quantity.toString(),
+      price: viewingProductDetails.price || 0,
+      notes: viewingProductDetails.notes || ""
+    })
+    setIsEditMode(false)
+  }
+
+  // Handle add new product to customer
+  const handleAddProductToCustomer = () => {
+    const newProduct = {
+      _id: `temp_${Date.now()}`,
+      productId: "",
+      productName: "",
+      customerId: editingCustomerId,
+      customerName: customerProducts[0]?.customerName || "",
+      quantity: 1,
+      price: 0,
+      notes: "",
+      isNew: true
+    }
+    setCustomerProducts([...customerProducts, newProduct])
+  }
+
+  // Handle remove product from customer
+  const handleRemoveProductFromCustomer = async (productId: string) => {
+    if (!confirm('Are you sure you want to remove this product?')) {
+      return
+    }
+
+    // If it's a new product (not saved yet), just remove from state
+    if (productId.startsWith('temp_')) {
+      setCustomerProducts(customerProducts.filter((p: any) => p._id !== productId))
+      return
+    }
+
+    // If it's an existing product, delete from database
+    try {
+      const response = await fetch(`/api/eshop-inventory/${productId}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setCustomerProducts(customerProducts.filter((p: any) => p._id !== productId))
+        setEshopInventory(eshopInventory.filter((item: any) => item._id !== productId))
+        alert('Product removed successfully')
+      } else {
+        alert('Error removing product: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error removing product:', error)
+      alert('Error removing product')
+    }
+  }
+
+  // Handle update customer products
+  const handleUpdateCustomerProducts = async () => {
+    try {
+      // Update existing products
+      for (const product of customerProducts.filter((p: any) => !p.isNew)) {
+        // Find the original inventory item to get the original quantities
+        const originalInventory = eshopInventory.find((inv: any) => inv._id === product._id)
+        
+        if (isRetopUpMode && originalInventory) {
+          // In re-top up mode: add the new quantity to the original quantity
+          const newTotalQuantity = originalInventory.quantity + parseInt(product.quantity.toString())
+          await fetch(`/api/eshop-inventory/${product._id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              quantity: newTotalQuantity,
+              price: parseFloat(product.price.toString()),
+              notes: product.notes,
+              lastUpdated: new Date().toISOString()
+            }),
+          })
+        } else {
+          // In edit mode: replace the quantity
+          await fetch(`/api/eshop-inventory/${product._id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              quantity: parseInt(product.quantity.toString()),
+              price: parseFloat(product.price.toString()),
+              notes: product.notes,
+              lastUpdated: new Date().toISOString()
+            }),
+          })
+        }
+      }
+
+      // Create new products
+      for (const product of customerProducts.filter((p: any) => p.isNew && p.productId)) {
+        await fetch('/api/eshop-inventory', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            productId: product.productId,
+            productName: product.productName,
+            customerId: product.customerId,
+            customerName: product.customerName,
+            quantity: parseInt(product.quantity.toString()),
+            price: parseFloat(product.price.toString()),
+            notes: product.notes,
+            lastUpdated: new Date().toISOString()
+          }),
+        })
+      }
+
+      alert('Customer products updated successfully')
+      setIsEshopDialogOpen(false)
+      setIsRetopUpMode(false)
+      // Refresh the data
+      window.location.reload()
+    } catch (error) {
+      console.error('Error updating customer products:', error)
+      alert('Error updating customer products')
+    }
+  }
+
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -1065,6 +1466,67 @@ export function DashboardPage() {
     } catch (error) {
       console.error('Error creating service:', error)
       alert('Error creating service')
+    }
+  }
+
+  const handleEshopSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const inventoryData = {
+        productId: eshopForm.productId,
+        productName: eshopForm.productName,
+        customerId: eshopForm.customerId,
+        customerName: eshopForm.customerName,
+        quantity: parseInt(eshopForm.quantity),
+        price: eshopForm.price,
+        notes: eshopForm.notes,
+        lastUpdated: new Date().toISOString()
+      }
+
+      if (editingEshopItem) {
+        // Update existing inventory
+        const response = await fetch(`/api/eshop-inventory/${editingEshopItem._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(inventoryData),
+        })
+        const result = await response.json()
+        
+        if (result.success) {
+          setEshopInventory(eshopInventory.map((item: any) => 
+            item._id === editingEshopItem._id ? result.data : item
+          ))
+          alert('Inventory updated successfully')
+        } else {
+          alert('Error updating inventory: ' + result.error)
+        }
+      } else {
+        // Create new inventory
+        const response = await fetch('/api/eshop-inventory', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(inventoryData),
+        })
+        const result = await response.json()
+        
+        if (result.success) {
+          setEshopInventory([...eshopInventory, result.data])
+          alert('Product inventory added successfully')
+        } else {
+          alert('Error adding inventory: ' + result.error)
+        }
+      }
+      
+      setIsEshopDialogOpen(false)
+      setEditingEshopItem(null)
+      setEshopForm({ customerId: '', customerName: '', productId: '', productName: '', quantity: '', price: 0, notes: '' })
+    } catch (error) {
+      console.error('Error submitting inventory:', error)
+      alert('Error submitting inventory')
     }
   }
 
@@ -2585,8 +3047,8 @@ export function DashboardPage() {
 
               {/* My Customers Tab - Shows E-Shop Inventory */}
               {activeSubSection === "my-customers" && (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
+                <div className="space-y-4 overflow-visible">
+                  <div className="flex items-center justify-between space-x-2">
                     <div className="relative flex-1 max-w-md">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
@@ -2596,6 +3058,192 @@ export function DashboardPage() {
                         className="pl-10"
                       />
                     </div>
+                    <Dialog open={isEshopDialogOpen} onOpenChange={setIsEshopDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Product Inventory
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-none w-[98vw] max-h-[90vh] overflow-y-auto" style={{ width: '98vw', maxWidth: '98vw' }}>
+                        <DialogHeader>
+                          <DialogTitle>
+                            {isRetopUpMode ? 'Re-top up Stock for' : 'Edit Products for'} {customerProducts[0]?.customerName || 'Customer'}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-6">
+                          {/* Description */}
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm text-muted-foreground">
+                              {isRetopUpMode ? 'Enter additional quantities to add to current stock (shown in quantity fields)' : 'Manage all products for this customer'}
+                            </div>
+                          </div>
+                          {/* Products Table */}
+                          <div className="border rounded-lg overflow-x-auto">
+                            <Table className="min-w-[1200px]">
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Product Name</TableHead>
+                                  <TableHead>Price (₹)</TableHead>
+                                  <TableHead>Discount (₹)</TableHead>
+                                  <TableHead>{isRetopUpMode ? 'Add Qty' : 'Quantity'}</TableHead>
+                                  <TableHead>Notes</TableHead>
+                                  <TableHead>Actions</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {customerProducts.map((product: any, index: number) => (
+                                  <TableRow key={product._id}>
+                                    <TableCell>
+                                      {product.isNew ? (
+                                        <Select
+                                          value={product.productId}
+                                          onValueChange={(value) => {
+                                            const selectedProduct = products.find((p: any) => p._id === value)
+                                            const updatedProducts = [...customerProducts]
+                                            updatedProducts[index] = {
+                                              ...updatedProducts[index],
+                                              productId: value,
+                                              productName: selectedProduct?.name || '',
+                                              price: selectedProduct?.price || 0
+                                            }
+                                            setCustomerProducts(updatedProducts)
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select product" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {products.map((p: any) => (
+                                              <SelectItem key={p._id} value={p._id}>
+                                                {p.name} - ₹{p.price}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      ) : (
+                                        <div className="font-medium">{product.productName}</div>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Input
+                                        type="number"
+                                        value={product.price}
+                                        onChange={(e) => {
+                                          const updatedProducts = [...customerProducts]
+                                          updatedProducts[index].price = parseFloat(e.target.value) || 0
+                                          setCustomerProducts(updatedProducts)
+                                        }}
+                                        min="0"
+                                        step="0.01"
+                                        className="w-32"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="font-medium text-green-600">
+                                        ₹{((product.price || 0) * 0.33).toFixed(1)}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Input
+                                        type="number"
+                                        value={product.quantity}
+                                        onChange={(e) => {
+                                          const updatedProducts = [...customerProducts]
+                                          updatedProducts[index].quantity = parseInt(e.target.value) || 1
+                                          setCustomerProducts(updatedProducts)
+                                        }}
+                                        min="1"
+                                        className="w-24"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Input
+                                        value={product.notes || ''}
+                                        onChange={(e) => {
+                                          const updatedProducts = [...customerProducts]
+                                          updatedProducts[index].notes = e.target.value
+                                          setCustomerProducts(updatedProducts)
+                                        }}
+                                        placeholder="Add notes..."
+                                        className="w-48"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => handleRemoveProductFromCustomer(product._id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+
+                          {/* Summary Section */}
+                          <div className="border-t pt-4">
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">Sub Total:</span>
+                                <div className="flex space-x-8">
+                                  <span className="text-sm font-medium">
+                                    ₹{customerProducts.reduce((sum, p) => sum + (p.price * p.quantity), 0).toLocaleString()}
+                                  </span>
+                                  <span className="text-sm font-medium text-green-600">
+                                    ₹{customerProducts.reduce((sum, p) => sum + (p.price * p.quantity * 0.33), 0).toFixed(1)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">Tax:</span>
+                                <span className="text-sm font-medium">
+                                  ₹{customerProducts.reduce((sum, p) => sum + (p.price * p.quantity * 0.25), 0).toFixed(1)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">Discount:</span>
+                                <span className="text-sm font-medium">
+                                  ₹{customerProducts.reduce((sum, p) => sum + (p.price * p.quantity * 0.33), 0).toFixed(1)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center border-t pt-2">
+                                <span className="text-lg font-bold">Grand Total:</span>
+                                <div className="flex space-x-8">
+                                  <span className="text-lg font-bold">
+                                    ₹{customerProducts.reduce((sum, p) => sum + (p.price * p.quantity * 0.92), 0).toFixed(1)}
+                                  </span>
+                                  <span className="text-sm font-medium text-green-600">
+                                    ₹{customerProducts.reduce((sum, p) => sum + (p.price * p.quantity * 0.33), 0).toFixed(1)}
+                                  </span>
+                                  <span className="text-sm font-medium">
+                                    {customerProducts.reduce((sum, p) => sum + p.quantity, 0)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => {
+                              setIsEshopDialogOpen(false)
+                              setCustomerProducts([])
+                              setEditingCustomerId(null)
+                              setIsRetopUpMode(false)
+                            }}>
+                              Cancel
+                            </Button>
+                            <Button onClick={handleUpdateCustomerProducts}>
+                              {isRetopUpMode ? 'Update Stock' : 'Save Changes'}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
 
                   {loading ? (
@@ -2645,34 +3293,70 @@ export function DashboardPage() {
                                   {customerData.products.length} product{customerData.products.length !== 1 ? 's' : ''} in stock
                                 </p>
                               </div>
-                              <Button>
-                                <FileText className="h-4 w-4 mr-2" />
-                                Generate Invoice
-                              </Button>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    // Use the first product to get customer info, then load all products
+                                    const firstProduct = customerData.products[0];
+                                    handleRetopUp(firstProduct);
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Re-top up
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    const items = customerData.products.map((item: any) => ({
+                                      name: item.productName,
+                                      quantity: item.quantity,
+                                      price: item.price || 0
+                                    }));
+                                    const queryParams = new URLSearchParams({
+                                      customerId: customerId,
+                                      items: JSON.stringify(items)
+                                    });
+                                    window.open(`/dashboard/invoice?${queryParams.toString()}`, '_blank');
+                                  }}
+                                >
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  Generate Invoice
+                                </Button>
+                              </div>
                             </div>
                           </CardHeader>
-                          <CardContent>
-                            <Table>
+                          <CardContent className="overflow-visible">
+                            <div className="overflow-visible">
+                              <Table>
                               <TableHeader>
                                 <TableRow>
                                   <TableHead>Product Name</TableHead>
-                                  <TableHead>Stock in Hand</TableHead>
+                                  <TableHead>Total Stock</TableHead>
+                                  <TableHead>Last Invoice</TableHead>
                                   <TableHead>Last Updated</TableHead>
                                   <TableHead>Notes</TableHead>
                                   <TableHead>Actions</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {customerData.products.map((item: any) => (
-                                  <TableRow key={item._id}>
-                                    <TableCell>
-                                      <div className="font-medium">{item.productName}</div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge variant={item.quantity < 10 ? "destructive" : "default"}>
-                                        {item.quantity} units
-                                      </Badge>
-                                    </TableCell>
+                                {customerData.products.map((item: any) => {
+                                  const invoicedQty = item.invoicedQuantity || 0;
+                                  const remainingQty = item.quantity - invoicedQty;
+                                  return (
+                                    <TableRow key={item._id}>
+                                      <TableCell>
+                                        <div className="font-medium">{item.productName}</div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge variant={remainingQty < 10 ? "destructive" : "default"}>
+                                          {remainingQty} units
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge variant="outline">
+                                          {invoicedQty} units
+                                        </Badge>
+                                      </TableCell>
                                     <TableCell>
                                       <div className="text-sm text-muted-foreground">
                                         {new Date(item.lastUpdated).toLocaleDateString()}
@@ -2683,37 +3367,61 @@ export function DashboardPage() {
                                         {item.notes || "-"}
                                       </div>
                                     </TableCell>
-                                    <TableCell>
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="sm">
-                                            <MoreVertical className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuItem onClick={() => handleRecordUsage(item)}>
-                                            <DollarSign className="h-4 w-4 mr-2" />
-                                            Record Usage
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleRetopUp(item)}>
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            Re-top up
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleEditEshopItem(item)}>
-                                            <Edit className="h-4 w-4 mr-2" />
-                                            Edit Manually
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleEditEshopItem(item)}>
-                                            <Eye className="h-4 w-4 mr-2" />
-                                            View Details
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
+                                    <TableCell className="relative">
+                                      <div className="relative">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            toggleDropdown(item._id)
+                                          }}
+                                        >
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                        
+                                        {openDropdownId === item._id && (
+                                          <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-[9999]">
+                                            <div className="py-1">
+                                              <button
+                                                onClick={() => handleRecordUsage(item)}
+                                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                              >
+                                                <DollarSign className="h-4 w-4 mr-2" />
+                                                Record Usage
+                                              </button>
+                                              <button
+                                                onClick={() => handleEditEshopItem(item)}
+                                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                              >
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Edit Manually
+                                              </button>
+                                              <button
+                                                onClick={() => handleViewProductDetails(item)}
+                                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                              >
+                                                <Eye className="h-4 w-4 mr-2" />
+                                                View Details
+                                              </button>
+                                              <button
+                                                onClick={() => handleDeleteInventoryItem(item)}
+                                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                                              >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Delete
+                                              </button>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
                                     </TableCell>
                                   </TableRow>
-                                ))}
+                                  );
+                                })}
                               </TableBody>
                             </Table>
+                            </div>
                           </CardContent>
                         </Card>
                       ))}
@@ -2750,6 +3458,7 @@ export function DashboardPage() {
                           <TableHead>Phone</TableHead>
                           <TableHead>Address</TableHead>
                           <TableHead>Joined Date</TableHead>
+                          <TableHead>Last Login</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
@@ -2757,13 +3466,13 @@ export function DashboardPage() {
                       <TableBody>
                         {loading ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8">
+                            <TableCell colSpan={8} className="text-center py-8">
                               Loading customers...
                             </TableCell>
                           </TableRow>
                         ) : customers.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8">
+                            <TableCell colSpan={8} className="text-center py-8">
                               <div className="text-muted-foreground">
                                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p>No customers found</p>
@@ -2797,6 +3506,11 @@ export function DashboardPage() {
                                 <TableCell>
                                   <div className="text-sm text-muted-foreground">
                                     {new Date(customer.createdAt).toLocaleDateString()}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground">
+                                    {customer.lastLogin ? new Date(customer.lastLogin).toLocaleString() : 'Never'}
                                   </div>
                                 </TableCell>
                                 <TableCell>
@@ -2952,6 +3666,8 @@ export function DashboardPage() {
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                           <Input
                             placeholder="Search customers..."
+                            value={customerSearchTerm}
+                            onChange={(e) => setCustomerSearchTerm(e.target.value)}
                             className="pl-10 w-64"
                           />
                         </div>
@@ -2965,20 +3681,73 @@ export function DashboardPage() {
                           <TableHead>Customer Name</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Phone</TableHead>
+                          <TableHead>Username</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Last Login</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8">
-                            <div className="text-muted-foreground">
-                              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                              <p>No customers found</p>
-                              <p className="text-sm">Customers will appear here once they register</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              Loading customers...
+                            </TableCell>
+                          </TableRow>
+                        ) : customers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              <div className="text-muted-foreground">
+                                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>No customers found</p>
+                                <p className="text-sm">Customers will appear here once they register</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          customers
+                            .filter((customer: any) => 
+                              customer.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+                              customer.email.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+                              customer.phone.includes(customerSearchTerm) ||
+                              customer.username?.toLowerCase().includes(customerSearchTerm.toLowerCase())
+                            )
+                            .map((customer: any) => (
+                              <TableRow key={customer._id}>
+                                <TableCell>
+                                  <div className="font-medium">{customer.name}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm">{customer.email}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm">{customer.phone}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm font-mono">{customer.username}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={customer.status === 'blocked' ? "destructive" : "default"}>
+                                    {customer.status === 'blocked' ? "Blocked" : "Active"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground">
+                                    {customer.lastLogin ? new Date(customer.lastLogin).toLocaleString() : 'Never'}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant={customer.status === 'blocked' ? "default" : "destructive"}
+                                    size="sm"
+                                    onClick={() => handleToggleCustomerStatus(customer)}
+                                  >
+                                    {customer.status === 'blocked' ? 'Unblock' : 'Block'}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                        )}
                       </TableBody>
                     </Table>
                   </CardContent>
@@ -2987,311 +3756,7 @@ export function DashboardPage() {
             </div>
           )}
 
-          {/* E-Shop Section */}
-          {activeSection === "eshop" && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight">E-Shop Inventory</h2>
-                <p className="text-muted-foreground">Manage products given to customers</p>
-              </div>
 
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search customers..."
-                    value={eshopSearchTerm}
-                    onChange={(e) => setEshopSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              {loading ? (
-                <Card>
-                  <CardContent className="py-8">
-                    <div className="text-center text-muted-foreground">
-                      Loading inventory...
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : eshopInventory.length === 0 ? (
-                <Card>
-                  <CardContent className="py-8">
-                    <div className="text-center text-muted-foreground">
-                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No inventory items found</p>
-                      <p className="text-sm">Products given to customers will appear here</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <>
-                  {/* Group inventory by customer */}
-                  {Object.entries(
-                    eshopInventory
-                      .filter((item: any) => 
-                        item.customerName.toLowerCase().includes(eshopSearchTerm.toLowerCase())
-                      )
-                      .reduce((acc: any, item: any) => {
-                        if (!acc[item.customerId]) {
-                          acc[item.customerId] = {
-                            customerName: item.customerName,
-                            customerId: item.customerId,
-                            products: []
-                          }
-                        }
-                        acc[item.customerId].products.push(item)
-                        return acc
-                      }, {})
-                  ).map(([customerId, customerData]: [string, any]) => (
-                    <Card key={customerId}>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-xl">{customerData.customerName}</CardTitle>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {customerData.products.length} product{customerData.products.length !== 1 ? 's' : ''}
-                            </p>
-                          </div>
-                          <Button>
-                            <FileText className="h-4 w-4 mr-2" />
-                            Generate Invoice
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Product Name</TableHead>
-                              <TableHead>Quantity</TableHead>
-                              <TableHead>Last Updated</TableHead>
-                              <TableHead>Notes</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {customerData.products.map((item: any) => (
-                              <TableRow key={item._id}>
-                                <TableCell>
-                                  <div className="font-medium">{item.productName}</div>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={item.quantity < 10 ? "destructive" : "default"}>
-                                    {item.quantity} units
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-sm text-muted-foreground">
-                                    {new Date(item.lastUpdated).toLocaleDateString()}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-sm text-muted-foreground max-w-xs truncate">
-                                    {item.notes || "-"}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => handleRecordUsage(item)}>
-                                        <DollarSign className="h-4 w-4 mr-2" />
-                                        Record Usage
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleRetopUp(item)}>
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Re-top up
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleEditEshopItem(item)}>
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Edit Manually
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleEditEshopItem(item)}>
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        View Details
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </>
-              )}
-
-              {/* Edit E-Shop Item Dialog */}
-              <Dialog open={isEshopDialogOpen} onOpenChange={setIsEshopDialogOpen}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Edit Inventory Item</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleEshopSubmit} className="space-y-4">
-                    <div>
-                      <Label>Product Name</Label>
-                      <Input value={eshopForm.productName} disabled />
-                    </div>
-                    <div>
-                      <Label>Customer Name</Label>
-                      <Input value={eshopForm.customerName} disabled />
-                    </div>
-                    <div>
-                      <Label htmlFor="eshop-quantity">Quantity</Label>
-                      <Input
-                        id="eshop-quantity"
-                        type="number"
-                        placeholder="Enter quantity"
-                        value={eshopForm.quantity}
-                        onChange={(e) => setEshopForm({...eshopForm, quantity: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="eshop-notes">Notes</Label>
-                      <Textarea
-                        id="eshop-notes"
-                        placeholder="Add notes..."
-                        value={eshopForm.notes}
-                        onChange={(e) => setEshopForm({...eshopForm, notes: e.target.value})}
-                      />
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button type="button" variant="outline" onClick={() => {
-                        setIsEshopDialogOpen(false)
-                        setEditingEshopItem(null)
-                        setEshopForm({ productId: "", productName: "", customerId: "", customerName: "", quantity: "", notes: "" })
-                      }}>
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        Update Quantity
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-
-              {/* Re-top up Dialog */}
-              <Dialog open={isRetopUpDialogOpen} onOpenChange={setIsRetopUpDialogOpen}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Re-top up Inventory</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleRetopUpSubmit} className="space-y-4">
-                    <div>
-                      <Label>Product Name</Label>
-                      <Input value={retopUpItem?.productName || ""} disabled />
-                    </div>
-                    <div>
-                      <Label>Customer Name</Label>
-                      <Input value={retopUpItem?.customerName || ""} disabled />
-                    </div>
-                    <div>
-                      <Label>Current Quantity</Label>
-                      <Input value={retopUpItem?.quantity || 0} disabled />
-                    </div>
-                    <div>
-                      <Label htmlFor="retopup-quantity">Add Quantity</Label>
-                      <Input
-                        id="retopup-quantity"
-                        type="number"
-                        placeholder="Enter quantity to add"
-                        value={retopUpQuantity}
-                        onChange={(e) => setRetopUpQuantity(e.target.value)}
-                        required
-                        min="1"
-                      />
-                      <p className="text-sm text-muted-foreground mt-1">
-                        New total: {retopUpItem && retopUpQuantity ? retopUpItem.quantity + parseInt(retopUpQuantity || "0") : retopUpItem?.quantity || 0} units
-                      </p>
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button type="button" variant="outline" onClick={() => {
-                        setIsRetopUpDialogOpen(false)
-                        setRetopUpItem(null)
-                        setRetopUpQuantity("")
-                      }}>
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        Confirm Re-top up
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-
-              {/* Record Usage Dialog */}
-              <Dialog open={isRecordUsageDialogOpen} onOpenChange={setIsRecordUsageDialogOpen}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Record Product Usage</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleRecordUsageSubmit} className="space-y-4">
-                    <div>
-                      <Label>Product Name</Label>
-                      <Input value={recordUsageItem?.productName || ""} disabled />
-                    </div>
-                    <div>
-                      <Label>Customer Name</Label>
-                      <Input value={recordUsageItem?.customerName || ""} disabled />
-                    </div>
-                    <div>
-                      <Label>Current Quantity (Items with Customer)</Label>
-                      <Input value={recordUsageItem?.quantity || 0} disabled />
-                    </div>
-                    <div>
-                      <Label htmlFor="used-quantity">Used Quantity (During Visit)</Label>
-                      <Input
-                        id="used-quantity"
-                        type="number"
-                        placeholder="Enter quantity used"
-                        value={usedQuantity}
-                        onChange={(e) => setUsedQuantity(e.target.value)}
-                        required
-                        min="1"
-                        max={recordUsageItem?.quantity || 0}
-                      />
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Remaining with customer: {recordUsageItem && usedQuantity ? Math.max(0, recordUsageItem.quantity - parseInt(usedQuantity || "0")) : recordUsageItem?.quantity || 0} units
-                      </p>
-                    </div>
-                    <div className="bg-muted p-3 rounded-md">
-                      <p className="text-sm font-medium">Usage Summary:</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        • Before: {recordUsageItem?.quantity || 0} units
-                        <br />
-                        • Used: {usedQuantity || 0} units
-                        <br />
-                        • After: {recordUsageItem && usedQuantity ? Math.max(0, recordUsageItem.quantity - parseInt(usedQuantity || "0")) : recordUsageItem?.quantity || 0} units
-                      </p>
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button type="button" variant="outline" onClick={() => {
-                        setIsRecordUsageDialogOpen(false)
-                        setRecordUsageItem(null)
-                        setUsedQuantity("")
-                      }}>
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        Confirm Usage
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
 
           {/* Orders Section */}
           {activeSection === "orders" && (
@@ -3407,23 +3872,55 @@ export function DashboardPage() {
                                       <SelectItem value="Cancelled">Cancelled</SelectItem>
                                     </SelectContent>
                                   </Select>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => handleViewOrder(order)}>
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        View Complete Order
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => deleteOrder(order._id)}>
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete Order
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                                  <div className="relative">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        toggleOrderDropdown(order._id)
+                                      }}
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    {openOrderDropdownId === order._id && (
+                                      <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-[9999]">
+                                        <div className="py-1">
+                                          <button
+                                            onClick={() => {
+                                              handleViewOrder(order)
+                                              setOpenOrderDropdownId(null)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                          >
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            View
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              handleEditOrder(order)
+                                              setOpenOrderDropdownId(null)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                          >
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              deleteOrder(order._id)
+                                              setOpenOrderDropdownId(null)
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -3529,6 +4026,172 @@ export function DashboardPage() {
                         </Button>
                       </div>
                     </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Edit Order Dialog */}
+              <Dialog open={isEditOrderDialogOpen} onOpenChange={setIsEditOrderDialogOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Edit Order - #{editingOrder?.orderNo}</DialogTitle>
+                  </DialogHeader>
+                  {editingOrder && (
+                    <form onSubmit={handleOrderEditSubmit} className="space-y-6">
+                      {/* Customer Information */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="customerName">Customer Name</Label>
+                          <Input
+                            id="customerName"
+                            value={orderEditForm.customerName}
+                            onChange={(e) => setOrderEditForm({...orderEditForm, customerName: e.target.value})}
+                            placeholder="Enter customer name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="customerPhone">Customer Phone</Label>
+                          <Input
+                            id="customerPhone"
+                            value={orderEditForm.customerPhone}
+                            onChange={(e) => setOrderEditForm({...orderEditForm, customerPhone: e.target.value})}
+                            placeholder="Enter phone number"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Shipping Address */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-medium">Shipping Address</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="street">Street Address</Label>
+                            <Input
+                              id="street"
+                              value={orderEditForm.shippingAddress.street}
+                              onChange={(e) => setOrderEditForm({
+                                ...orderEditForm, 
+                                shippingAddress: {...orderEditForm.shippingAddress, street: e.target.value}
+                              })}
+                              placeholder="Enter street address"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="city">City</Label>
+                            <Input
+                              id="city"
+                              value={orderEditForm.shippingAddress.city}
+                              onChange={(e) => setOrderEditForm({
+                                ...orderEditForm, 
+                                shippingAddress: {...orderEditForm.shippingAddress, city: e.target.value}
+                              })}
+                              placeholder="Enter city"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="state">State</Label>
+                            <Input
+                              id="state"
+                              value={orderEditForm.shippingAddress.state}
+                              onChange={(e) => setOrderEditForm({
+                                ...orderEditForm, 
+                                shippingAddress: {...orderEditForm.shippingAddress, state: e.target.value}
+                              })}
+                              placeholder="Enter state"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="zipCode">Zip Code</Label>
+                            <Input
+                              id="zipCode"
+                              value={orderEditForm.shippingAddress.zipCode}
+                              onChange={(e) => setOrderEditForm({
+                                ...orderEditForm, 
+                                shippingAddress: {...orderEditForm.shippingAddress, zipCode: e.target.value}
+                              })}
+                              placeholder="Enter zip code"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Order Details */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="totalAmount">Total Amount</Label>
+                          <Input
+                            id="totalAmount"
+                            type="number"
+                            value={orderEditForm.totalAmount}
+                            onChange={(e) => setOrderEditForm({...orderEditForm, totalAmount: parseFloat(e.target.value) || 0})}
+                            placeholder="Enter total amount"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="status">Order Status</Label>
+                          <Select
+                            value={orderEditForm.status}
+                            onValueChange={(value) => setOrderEditForm({...orderEditForm, status: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Order Placed">Order Placed</SelectItem>
+                              <SelectItem value="Confirmed">Confirmed</SelectItem>
+                              <SelectItem value="Processing">Processing</SelectItem>
+                              <SelectItem value="Shipped">Shipped</SelectItem>
+                              <SelectItem value="Delivered">Delivered</SelectItem>
+                              <SelectItem value="Cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Order Items */}
+                      <div>
+                        <Label className="text-sm font-medium mb-3 block">Order Items</Label>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Product Name</TableHead>
+                              <TableHead>Quantity</TableHead>
+                              <TableHead>Price</TableHead>
+                              <TableHead>Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {orderEditForm.items?.map((item: any, index: number) => (
+                              <TableRow key={index}>
+                                <TableCell>
+                                  <div className="font-medium">{item.productName}</div>
+                                </TableCell>
+                                <TableCell>{item.quantity}</TableCell>
+                                <TableCell>₹{item.price.toLocaleString()}</TableCell>
+                                <TableCell>₹{item.total.toLocaleString()}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => {
+                            setIsEditOrderDialogOpen(false)
+                            setEditingOrder(null)
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit">
+                          Update Order
+                        </Button>
+                      </div>
+                    </form>
                   )}
                 </DialogContent>
               </Dialog>
@@ -3784,6 +4447,403 @@ export function DashboardPage() {
                       </div>
                     </div>
                   )}
+                </DialogContent>
+              </Dialog>
+
+              {/* View Product Details Dialog */}
+              <Dialog open={isViewProductDetailsDialogOpen} onOpenChange={setIsViewProductDetailsDialogOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <div className="flex items-center justify-between">
+                      <DialogTitle>
+                        {isEditMode ? 'Edit Product Details' : 'View All Product'} - {viewingProductDetails?.productName}
+                      </DialogTitle>
+                      <div className="flex space-x-2">
+                        {!isEditMode && (
+                          <Button onClick={handleEditModeToggle} variant="outline" size="sm">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                        )}
+                        {isEditMode && (
+                          <>
+                            <Button onClick={handleSaveChanges} size="sm">
+                              <FileText className="h-4 w-4 mr-2" />
+                              Save
+                            </Button>
+                            <Button onClick={handleCancelEdit} variant="outline" size="sm">
+                              Cancel
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </DialogHeader>
+                  {viewingProductDetails && (
+                    <div className="space-y-6">
+                      {/* Product Information */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Customer Name</Label>
+                          <p className="text-sm font-medium mt-1">{viewingProductDetails.customerName}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Product Name</Label>
+                          <p className="text-sm font-medium mt-1">{viewingProductDetails.productName}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Current Stock</Label>
+                          <p className="text-sm font-medium mt-1">{viewingProductDetails.quantity} units</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
+                          <p className="text-sm mt-1">{new Date(viewingProductDetails.lastUpdated).toLocaleString()}</p>
+                        </div>
+                      </div>
+
+                      {/* Product Details Table */}
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground mb-3 block">Product Details</Label>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Product Name</TableHead>
+                              <TableHead>Price</TableHead>
+                              <TableHead>Discount</TableHead>
+                              <TableHead>Qty</TableHead>
+                              <TableHead>Remove</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {viewingProductDetails.allProducts?.map((product: any, index: number) => (
+                              <TableRow key={product._id}>
+                                <TableCell>
+                                  <div className="font-medium">{product.productName}</div>
+                                </TableCell>
+                                <TableCell>
+                                  {isEditMode ? (
+                                    <Input
+                                      type="number"
+                                      value={product.price}
+                                      onChange={(e) => {
+                                        const updatedProducts = [...viewingProductDetails.allProducts]
+                                        updatedProducts[index].price = parseFloat(e.target.value) || 0
+                                        setViewingProductDetails({
+                                          ...viewingProductDetails,
+                                          allProducts: updatedProducts
+                                        })
+                                      }}
+                                      className="w-24"
+                                      min="0"
+                                      step="0.01"
+                                    />
+                                  ) : (
+                                    <div className="font-medium">₹{product.price?.toLocaleString() || 0}</div>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium text-green-600">
+                                    ₹{((product.price || 0) * 0.33).toFixed(1)}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Input 
+                                    value={product.quantity}
+                                    onChange={isEditMode ? (e) => {
+                                      const updatedProducts = [...viewingProductDetails.allProducts]
+                                      updatedProducts[index].quantity = parseInt(e.target.value) || 1
+                                      setViewingProductDetails({
+                                        ...viewingProductDetails,
+                                        allProducts: updatedProducts
+                                      })
+                                    } : undefined}
+                                    className="w-20 text-center border-blue-300"
+                                    readOnly={!isEditMode}
+                                    type="number"
+                                    min="0"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="bg-yellow-400 hover:bg-yellow-500 text-black border-yellow-400"
+                                    onClick={() => handleDeleteInventoryItem(product)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Summary Section */}
+                      <div className="border-t pt-4">
+                        {(() => {
+                          const allProducts = viewingProductDetails.allProducts || []
+                          const subTotalPrice = allProducts.reduce((sum: number, p: any) => sum + (p.price * p.quantity), 0)
+                          const subTotalDiscount = allProducts.reduce((sum: number, p: any) => sum + (p.price * p.quantity * 0.33), 0)
+                          const taxAmount = allProducts.reduce((sum: number, p: any) => sum + (p.price * p.quantity * 0.25), 0)
+                          const grandTotalPrice = subTotalPrice - subTotalDiscount + taxAmount
+                          const grandTotalDiscount = subTotalDiscount
+                          const totalQuantity = allProducts.reduce((sum: number, p: any) => sum + p.quantity, 0)
+                          
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">Sub Total:</span>
+                                <div className="flex space-x-8">
+                                  <span className="text-sm font-medium">₹{subTotalPrice.toLocaleString()}</span>
+                                  <span className="text-sm font-medium text-green-600">₹{subTotalDiscount.toFixed(1)}</span>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">Tax:</span>
+                                <div className="flex space-x-8">
+                                  <span className="text-sm font-medium">₹{taxAmount.toFixed(1)}</span>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">Discount:</span>
+                                <div className="flex space-x-8">
+                                  <span className="text-sm font-medium">₹{grandTotalDiscount.toFixed(1)}</span>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center border-t pt-2">
+                                <span className="text-lg font-bold">Grand Total:</span>
+                                <div className="flex space-x-8">
+                                  <span className="text-lg font-bold">₹{grandTotalPrice.toFixed(1)}</span>
+                                  <span className="text-sm font-medium text-green-600">₹{grandTotalDiscount.toFixed(1)}</span>
+                                  <span className="text-sm font-medium">{totalQuantity}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </div>
+
+                      {/* Notes Section */}
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+                        {isEditMode ? (
+                          <Textarea
+                            value={editForm.notes}
+                            onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
+                            placeholder="Add notes about this inventory..."
+                            className="mt-1"
+                            rows={3}
+                          />
+                        ) : (
+                          <p className="text-sm mt-1 p-3 bg-muted rounded-md">
+                            {viewingProductDetails.notes || "No notes available"}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between">
+                        <Button 
+                          onClick={() => handleDeleteInventoryItem(viewingProductDetails)}
+                          variant="destructive"
+                          size="sm"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Item
+                        </Button>
+                        <Button onClick={() => setIsViewProductDetailsDialogOpen(false)}>
+                          Close
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Re-top up Dialog */}
+              <Dialog open={isEshopDialogOpen} onOpenChange={setIsEshopDialogOpen}>
+                <DialogContent className="max-w-none w-[98vw] max-h-[90vh] overflow-y-auto" style={{ width: '98vw', maxWidth: '98vw' }}>
+                  <DialogTitle>
+                    {isRetopUpMode ? `Re-top up Stock for ${editingCustomer?.name}` : `Edit Products for ${editingCustomer?.name}`}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {isRetopUpMode 
+                      ? "Enter additional quantities to add to current stock (shown in quantity fields)"
+                      : "Manage products and quantities for this customer"
+                    }
+                  </DialogDescription>
+
+                  <div className="space-y-6">
+                    {/* Add Product Button */}
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">Customer Products</h3>
+                      <Button onClick={handleAddProductToCustomer} className="bg-blue-600 hover:bg-blue-700">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Product
+                      </Button>
+                    </div>
+
+                    {/* Products Table */}
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[1200px]">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[200px]">Product Name</TableHead>
+                            <TableHead className="w-[120px]">Price (₹)</TableHead>
+                            <TableHead className="w-[120px]">Discount (₹)</TableHead>
+                            <TableHead className="w-[100px]">
+                              {isRetopUpMode ? "Add Qty" : "Quantity"}
+                            </TableHead>
+                            <TableHead className="w-[200px]">Notes</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {customerProducts.map((product, index) => (
+                            <TableRow key={index}>
+                              <TableCell>
+                                {product.isNew ? (
+                                  <Select
+                                    value={product.productId || ""}
+                                    onValueChange={(value) => {
+                                      const updatedProducts = [...customerProducts]
+                                      updatedProducts[index] = { ...product, productId: value }
+                                      setCustomerProducts(updatedProducts)
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select Product" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {products.map((p) => (
+                                        <SelectItem key={p._id} value={p._id}>
+                                          {p.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <span className="font-medium">{product.name}</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={product.price}
+                                  onChange={(e) => {
+                                    const updatedProducts = [...customerProducts]
+                                    updatedProducts[index] = { ...product, price: parseFloat(e.target.value) || 0 }
+                                    setCustomerProducts(updatedProducts)
+                                  }}
+                                  className="w-32"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-green-600 font-medium">
+                                  ₹{((product.price * 0.4)).toFixed(1)}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={product.quantity}
+                                  onChange={(e) => {
+                                    const updatedProducts = [...customerProducts]
+                                    updatedProducts[index] = { ...product, quantity: parseInt(e.target.value) || 0 }
+                                    setCustomerProducts(updatedProducts)
+                                  }}
+                                  className="w-24"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={product.notes || ""}
+                                  onChange={(e) => {
+                                    const updatedProducts = [...customerProducts]
+                                    updatedProducts[index] = { ...product, notes: e.target.value }
+                                    setCustomerProducts(updatedProducts)
+                                  }}
+                                  placeholder="Add notes..."
+                                  className="w-48"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleRemoveProductFromCustomer(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Summary Section */}
+                    {customerProducts.length > 0 && (() => {
+                      const subTotal = customerProducts.reduce((sum, product) => sum + (product.price * product.quantity), 0)
+                      const grandTotalDiscount = customerProducts.reduce((sum, product) => sum + ((product.price * 0.4) * product.quantity), 0)
+                      const taxAmount = customerProducts.reduce((sum, product) => sum + ((product.price * 0.18) * product.quantity), 0)
+                      const grandTotalPrice = subTotal + taxAmount
+                      const totalQuantity = customerProducts.reduce((sum, product) => sum + product.quantity, 0)
+
+                      return (
+                        <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">Sub Total:</span>
+                            <div className="flex space-x-8">
+                              <span className="text-sm font-medium">₹{subTotal.toFixed(1)}</span>
+                              <span className="text-sm font-medium text-green-600">₹{grandTotalDiscount.toFixed(1)}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">Tax:</span>
+                            <div className="flex space-x-8">
+                              <span className="text-sm font-medium">₹{taxAmount.toFixed(1)}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">Discount:</span>
+                            <div className="flex space-x-8">
+                              <span className="text-sm font-medium">₹{grandTotalDiscount.toFixed(1)}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center border-t pt-2">
+                            <span className="text-lg font-bold">Grand Total:</span>
+                            <div className="flex space-x-8">
+                              <span className="text-lg font-bold">₹{grandTotalPrice.toFixed(1)}</span>
+                              <span className="text-sm font-medium text-green-600">₹{grandTotalDiscount.toFixed(1)}</span>
+                              <span className="text-sm font-medium">{totalQuantity}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end space-x-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsEshopDialogOpen(false)
+                          setIsRetopUpMode(false)
+                          setCustomerProducts([])
+                          setEditingCustomerId(null)
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleUpdateCustomerProducts}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {isRetopUpMode ? "Update Stock" : "Save Changes"}
+                      </Button>
+                    </div>
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>
