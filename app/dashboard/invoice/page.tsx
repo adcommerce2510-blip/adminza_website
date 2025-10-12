@@ -132,7 +132,7 @@ const InvoicePreview = ({ data = {} as InvoiceData, showDownloadButton = true, i
       );
       
       // Create blob and download
-      const blob = new Blob([pdfData], { type: 'application/pdf' });
+      const blob = new Blob([pdfData as BlobPart], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -473,7 +473,7 @@ export default function InvoicePage() {
   }, [searchParams]);
 
   const handleQuantityChange = (itemIndex: number, newQuantity: number) => {
-    if (invoiceData && newQuantity >= 0) {
+    if (invoiceData && newQuantity >= 0 && invoiceData.items) {
       const updatedItems = [...invoiceData.items];
       updatedItems[itemIndex].quantity = newQuantity;
       updatedItems[itemIndex].total = updatedItems[itemIndex].price * newQuantity;
@@ -489,7 +489,7 @@ export default function InvoicePage() {
   };
 
   const handlePriceChange = (itemIndex: number, newPrice: number) => {
-    if (invoiceData && newPrice >= 0) {
+    if (invoiceData && newPrice >= 0 && invoiceData.items) {
       const updatedItems = [...invoiceData.items];
       updatedItems[itemIndex].price = newPrice;
       updatedItems[itemIndex].total = newPrice * updatedItems[itemIndex].quantity;
@@ -519,7 +519,7 @@ export default function InvoicePage() {
       );
       
       // Create blob and download
-      const blob = new Blob([pdfData], { type: 'application/pdf' });
+      const blob = new Blob([pdfData as BlobPart], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -530,7 +530,7 @@ export default function InvoicePage() {
       URL.revokeObjectURL(url);
       
       // Update inventory quantities (deduct billed amounts)
-      const updatePromises = invoiceData.items.map(async (invoiceItem) => {
+      const updatePromises = (invoiceData.items || []).map(async (invoiceItem) => {
         // Find the corresponding inventory item with better matching
         const inventoryItem = currentInventory.find(inv => 
           inv.productName === invoiceItem.name || 
@@ -580,7 +580,7 @@ export default function InvoicePage() {
       await Promise.all(updatePromises);
       
       // Count successful updates
-      const successfulUpdates = invoiceData.items.filter((invoiceItem) => {
+      const successfulUpdates = (invoiceData.items || []).filter((invoiceItem) => {
         return currentInventory.find(inv => 
           inv.productName === invoiceItem.name || 
           inv.productName?.toLowerCase().trim() === invoiceItem.name?.toLowerCase().trim()
@@ -649,7 +649,7 @@ export default function InvoicePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {invoiceData.items.map((item, index) => (
+                  {(invoiceData.items || []).map((item, index) => (
                     <div key={index} className="border rounded-lg p-4">
                       <h4 className="font-medium text-sm mb-2">{item.name}</h4>
                       

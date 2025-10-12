@@ -474,7 +474,8 @@ export function Header() {
         city: "",
         state: "",
         zipCode: "",
-        country: "India"
+        country: "India",
+        gstNumber: ""
       })
       
       router.refresh()
@@ -507,7 +508,8 @@ export function Header() {
       city: "",
       state: "",
       zipCode: "",
-      country: "India"
+      country: "India",
+      gstNumber: ""
     })
   }
 

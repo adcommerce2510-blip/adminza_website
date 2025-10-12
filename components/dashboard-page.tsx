@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { 
@@ -4771,7 +4771,7 @@ export function DashboardPage() {
                                 <Button
                                   variant="destructive"
                                   size="sm"
-                                  onClick={() => handleRemoveProductFromCustomer(index)}
+                                  onClick={() => handleRemoveProductFromCustomer(index.toString())}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
