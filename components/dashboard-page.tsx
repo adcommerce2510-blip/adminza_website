@@ -1954,7 +1954,7 @@ export function DashboardPage() {
                         <div className="flex items-center space-x-2">
                           <Dialog open={isServiceDialogOpen} onOpenChange={setIsServiceDialogOpen}>
                             <DialogTrigger asChild>
-                              <Button>
+                              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Service
                               </Button>
@@ -2084,7 +2084,7 @@ export function DashboardPage() {
                                   }}>
                                     Cancel
                                   </Button>
-                                  <Button type="submit">
+                                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                                     Add Service
                                   </Button>
                                 </div>
@@ -2188,7 +2188,7 @@ export function DashboardPage() {
                         <div className="flex items-center space-x-2">
                           <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
                             <DialogTrigger asChild>
-                              <Button>
+                              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Product
                               </Button>
@@ -2360,7 +2360,7 @@ export function DashboardPage() {
                                   }}>
                                     Cancel
                                   </Button>
-                                  <Button type="submit">
+                                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                                     Add Product
                                   </Button>
                                 </div>
@@ -2737,7 +2737,7 @@ export function DashboardPage() {
                                 <Button type="button" variant="outline" onClick={() => setIsSubCategoryDialogOpen(false)}>
                                   Cancel
                                 </Button>
-                                <Button type="submit" disabled={!subCategoryForm.mainCategory}>
+                                <Button type="submit" disabled={!subCategoryForm.mainCategory} className="bg-blue-600 hover:bg-blue-700 text-white">
                                   Add Sub Category
                                 </Button>
                               </div>
@@ -2748,7 +2748,7 @@ export function DashboardPage() {
                       {activeSubSection === "level2-categories" && (
                         <Dialog open={isLevel2CategoryDialogOpen} onOpenChange={setIsLevel2CategoryDialogOpen}>
                           <DialogTrigger asChild>
-                            <Button>
+                            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                               <Plus className="h-4 w-4 mr-2" />
                               Add Level2 Category
                             </Button>
@@ -2829,7 +2829,7 @@ export function DashboardPage() {
                                 <Button type="button" variant="outline" onClick={() => setIsLevel2CategoryDialogOpen(false)}>
                                   Cancel
                                 </Button>
-                                <Button type="submit" disabled={!level2CategoryForm.mainCategory || !level2CategoryForm.subCategory}>
+                                <Button type="submit" disabled={!level2CategoryForm.mainCategory || !level2CategoryForm.subCategory} className="bg-blue-600 hover:bg-blue-700 text-white">
                                   Add Level2 Category
                                 </Button>
                               </div>
