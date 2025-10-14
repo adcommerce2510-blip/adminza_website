@@ -3060,7 +3060,7 @@ export function DashboardPage() {
                     </div>
                     <Dialog open={isEshopDialogOpen} onOpenChange={setIsEshopDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                           <Plus className="h-4 w-4 mr-2" />
                           Add Product Inventory
                         </Button>
@@ -3646,7 +3646,7 @@ export function DashboardPage() {
                       }}>
                         Cancel
                       </Button>
-                      <Button type="submit">
+                      <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                         {editingCustomer ? "Update Customer" : "Add Customer"}
                       </Button>
                     </div>
