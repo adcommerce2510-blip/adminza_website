@@ -3295,7 +3295,6 @@ export function DashboardPage() {
                               </div>
                               <div className="flex space-x-2">
                                 <Button
-                                  variant="outline"
                                   onClick={() => {
                                     // Use the first product to get customer info, then load all products
                                     const firstProduct = customerData.products[0];
@@ -3370,7 +3369,7 @@ export function DashboardPage() {
                                     <TableCell className="relative">
                                       <div className="relative">
                                         <Button 
-                                          variant="ghost" 
+                                          variant="outline" 
                                           size="sm"
                                           onClick={(e) => {
                                             e.stopPropagation()
@@ -3874,7 +3873,7 @@ export function DashboardPage() {
                                   </Select>
                                   <div className="relative">
                                     <Button 
-                                      variant="ghost" 
+                                      variant="outline" 
                                       size="sm"
                                       onClick={(e) => {
                                         e.stopPropagation()
