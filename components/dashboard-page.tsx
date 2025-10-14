@@ -109,6 +109,18 @@ const uploadFile = async (file: File) => {
   return data
 }
 
+const fetchOrders = async () => {
+  const response = await fetch('/api/orders')
+  const data = await response.json()
+  return data.success ? data.data : []
+}
+
+const fetchQuotations = async () => {
+  const response = await fetch('/api/quotations')
+  const data = await response.json()
+  return data.success ? data.data : []
+}
+
 
 const mainCategories = [
   { value: "product", label: "Product" },
@@ -1576,6 +1588,9 @@ export function DashboardPage() {
     }
   }
 
+  // Calculate total revenue from orders
+  const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+  
   const stats = [
     {
       title: "Total Products",
@@ -1593,14 +1608,14 @@ export function DashboardPage() {
     },
     {
       title: "Total Revenue",
-      value: "₹2,45,000",
+      value: `₹${totalRevenue.toLocaleString()}`,
       change: "+15% from last month",
       icon: DollarSign,
       color: "text-purple-600"
     },
     {
       title: "Total Orders",
-      value: "156",
+      value: orders.length,
       change: "+23% from last month",
       icon: ShoppingCart,
       color: "text-orange-600"
@@ -1892,27 +1907,25 @@ export function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">New product added</p>
-                          <p className="text-xs text-muted-foreground">2 hours ago</p>
+                      {orders.slice(0, 3).map((order, index) => (
+                        <div key={order._id} className="flex items-center space-x-4">
+                          <div className={`w-2 h-2 rounded-full ${
+                            index === 0 ? 'bg-green-500' : 
+                            index === 1 ? 'bg-blue-500' : 'bg-orange-500'
+                          }`}></div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">New order #{order.orderNo}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(order.createdAt).toLocaleString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Service updated</p>
-                          <p className="text-xs text-muted-foreground">4 hours ago</p>
+                      ))}
+                      {orders.length === 0 && (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-muted-foreground">No recent orders</p>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">New order received</p>
-                          <p className="text-xs text-muted-foreground">6 hours ago</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1923,18 +1936,25 @@ export function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Office Furniture</span>
-                        <span className="text-sm font-medium">45%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">IT Services</span>
-                        <span className="text-sm font-medium">32%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Cleaning Services</span>
-                        <span className="text-sm font-medium">23%</span>
-                      </div>
+                      {categories.slice(0, 3).map((category, index) => {
+                        const productCount = products.filter(p => p.category === category.name).length
+                        const serviceCount = services.filter(s => s.category === category.name).length
+                        const totalItems = productCount + serviceCount
+                        const totalAllItems = products.length + services.length
+                        const percentage = totalAllItems > 0 ? Math.round((totalItems / totalAllItems) * 100) : 0
+                        
+                        return (
+                          <div key={category._id} className="flex items-center justify-between">
+                            <span className="text-sm">{category.name}</span>
+                            <span className="text-sm font-medium">{percentage}%</span>
+                          </div>
+                        )
+                      })}
+                      {categories.length === 0 && (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-muted-foreground">No categories available</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -3367,7 +3387,15 @@ export function DashboardPage() {
                                       </div>
                                     </TableCell>
                                     <TableCell className="relative">
-                                      <div className="relative">
+                                      <div className="relative flex space-x-2">
+                                        <Button 
+                                          size="sm"
+                                          onClick={() => handleRetopUp(item)}
+                                          className="bg-green-600 hover:bg-green-700 text-white"
+                                        >
+                                          <Plus className="h-4 w-4 mr-1" />
+                                          Re-top up
+                                        </Button>
                                         <Button 
                                           variant="outline" 
                                           size="sm"
