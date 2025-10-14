@@ -2620,7 +2620,7 @@ export function DashboardPage() {
                       {activeSubSection === "categories" && (
                         <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
                           <DialogTrigger asChild>
-                            <Button>
+                            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                               <Plus className="h-4 w-4 mr-2" />
                               Add Category
                             </Button>
@@ -2665,7 +2665,7 @@ export function DashboardPage() {
                                 <Button type="button" variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
                                   Cancel
                                 </Button>
-                                <Button type="submit">
+                                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                                   Add Category
                                 </Button>
                               </div>
@@ -2676,7 +2676,7 @@ export function DashboardPage() {
                       {activeSubSection === "sub-categories" && (
                         <Dialog open={isSubCategoryDialogOpen} onOpenChange={setIsSubCategoryDialogOpen}>
                           <DialogTrigger asChild>
-                            <Button>
+                            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                               <Plus className="h-4 w-4 mr-2" />
                               Add Sub Category
                             </Button>
