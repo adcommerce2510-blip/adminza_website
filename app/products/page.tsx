@@ -172,13 +172,15 @@ export default function ProductDetailPage() {
           <div>
             {/* Main Image */}
             <div className="relative bg-gray-50 rounded-lg overflow-hidden mb-4 group">
-              <div className="aspect-square relative">
+              <div className="aspect-square relative w-full h-full">
                 {images.length > 0 ? (
                   <Image
                     src={images[selectedImage]}
                     alt={product.name}
                     fill
                     className="object-contain p-8"
+                    priority
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -191,13 +193,13 @@ export default function ProductDetailPage() {
                   <>
                     <button
                       onClick={() => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     >
                       <ChevronLeft className="h-5 w-5 text-gray-700" />
                     </button>
                     <button
                       onClick={() => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     >
                       <ChevronRight className="h-5 w-5 text-gray-700" />
                     </button>
