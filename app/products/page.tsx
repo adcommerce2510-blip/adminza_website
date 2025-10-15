@@ -214,7 +214,7 @@ export default function ProductDetailPage() {
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`w-28 h-28 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
+                      className={`relative w-28 h-28 rounded-xl border-2 transition-all duration-300 ${
                         selectedImage === index 
                           ? 'border-blue-600 ring-4 ring-blue-200 shadow-xl scale-105' 
                           : 'border-gray-200 hover:border-gray-400 hover:shadow-lg hover:scale-102'
@@ -225,13 +225,12 @@ export default function ProductDetailPage() {
                         minHeight: '112px'
                       }}
                     >
-                      <div className="relative w-full h-full bg-gray-50 flex items-center justify-center">
+                      <div className="absolute inset-0 rounded-xl overflow-hidden bg-white">
                         <Image
                           src={img}
                           alt={`Product view ${index + 1}`}
-                          width={112}
-                          height={112}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
                           placeholder="blur"
                           blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                         />
