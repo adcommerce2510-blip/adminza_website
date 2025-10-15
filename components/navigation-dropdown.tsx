@@ -18,6 +18,22 @@ interface NavigationDropdownProps {
 
 function NestedMenuItem({ subcategory }: { subcategory: SubCategory }) {
   const [isNestedOpen, setIsNestedOpen] = useState(false)
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+
+  const handleMouseEnter = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+      setTimeoutId(null)
+    }
+    setIsNestedOpen(true)
+  }
+
+  const handleMouseLeave = () => {
+    const id = setTimeout(() => {
+      setIsNestedOpen(false)
+    }, 200)
+    setTimeoutId(id)
+  }
 
   if (!subcategory.nested) {
     return (
@@ -33,8 +49,8 @@ function NestedMenuItem({ subcategory }: { subcategory: SubCategory }) {
   return (
     <div
       className="relative"
-      onMouseEnter={() => setIsNestedOpen(true)}
-      onMouseLeave={() => setIsNestedOpen(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div className="flex items-center justify-between px-4 py-3 text-sm text-gray-800 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-gray-100">
         <span className="font-medium">{subcategory.name}</span>
@@ -43,9 +59,9 @@ function NestedMenuItem({ subcategory }: { subcategory: SubCategory }) {
 
       {isNestedOpen && (
         <div 
-          className="absolute left-full top-0 mt-0 ml-2 w-72 bg-white border-2 border-blue-500 shadow-2xl z-[9999] rounded-lg"
-          onMouseEnter={() => setIsNestedOpen(true)}
-          onMouseLeave={() => setIsNestedOpen(false)}
+          className="absolute left-full top-0 w-72 bg-white border-2 border-blue-500 shadow-2xl z-[9999] rounded-lg"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           style={{
             display: 'block',
             visibility: 'visible',
@@ -53,7 +69,8 @@ function NestedMenuItem({ subcategory }: { subcategory: SubCategory }) {
             position: 'absolute',
             top: '0',
             left: '100%',
-            marginLeft: '8px',
+            marginLeft: '0px',
+            paddingLeft: '4px',
             width: '288px',
             backgroundColor: 'white',
             border: '2px solid #3b82f6',
@@ -84,12 +101,28 @@ function NestedMenuItem({ subcategory }: { subcategory: SubCategory }) {
 
 export function NavigationDropdown({ title, subcategories }: NavigationDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+
+  const handleMouseEnter = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+      setTimeoutId(null)
+    }
+    setIsOpen(true)
+  }
+
+  const handleMouseLeave = () => {
+    const id = setTimeout(() => {
+      setIsOpen(false)
+    }, 200)
+    setTimeoutId(id)
+  }
 
   return (
     <div 
       className="relative" 
-      onMouseEnter={() => setIsOpen(true)} 
-      onMouseLeave={() => setIsOpen(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <button 
         className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 whitespace-nowrap"
@@ -101,9 +134,9 @@ export function NavigationDropdown({ title, subcategories }: NavigationDropdownP
 
       {isOpen && (
         <div 
-          className="absolute top-full left-0 mt-2 w-80 bg-white border-2 border-blue-500 shadow-2xl z-[9999] rounded-lg"
-          onMouseEnter={() => setIsOpen(true)}
-          onMouseLeave={() => setIsOpen(false)}
+          className="absolute top-full left-0 w-80 bg-white border-2 border-blue-500 shadow-2xl z-[9999] rounded-lg"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           style={{
             display: 'block',
             visibility: 'visible',
@@ -111,7 +144,8 @@ export function NavigationDropdown({ title, subcategories }: NavigationDropdownP
             position: 'absolute',
             top: '100%',
             left: '0',
-            marginTop: '8px',
+            marginTop: '0px',
+            paddingTop: '4px',
             width: '320px',
             backgroundColor: 'white',
             border: '2px solid #3b82f6',
