@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, Star, Truck, Shield, Clock, Package, ChevronLeft, ChevronRight, Check } from "lucide-react"
+import { ShoppingCart, Star, Truck, Shield, Clock, Package, ChevronLeft, ChevronRight, Check, Heart, Share2, Award, RefreshCw } from "lucide-react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -128,11 +128,11 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12">
+      <div className="min-h-screen bg-white py-16">
         <div className="container mx-auto px-4">
-          <div className="text-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
-            <p className="mt-6 text-lg text-gray-600">Loading product details...</p>
+          <div className="text-center py-24">
+            <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-blue-600 mx-auto"></div>
+            <p className="mt-8 text-xl text-gray-600 font-medium">Loading product details...</p>
           </div>
         </div>
       </div>
@@ -141,16 +141,16 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12">
+      <div className="min-h-screen bg-white py-16">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center py-20">
-            <Package className="h-32 w-32 text-gray-300 mx-auto mb-8" />
-            <h2 className="text-3xl font-semibold text-gray-900 mb-4">Product Not Found</h2>
-            <p className="text-lg text-gray-600 mb-8">
+          <div className="text-center py-24">
+            <Package className="h-40 w-40 text-gray-300 mx-auto mb-8" />
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Product Not Found</h2>
+            <p className="text-xl text-gray-600 mb-10">
               The product you're looking for doesn't exist or has been removed.
             </p>
             <Link href="/">
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-6">
                 Back to Home
               </Button>
             </Link>
@@ -163,203 +163,229 @@ export default function ProductDetailPage() {
   const images = product.images && product.images.length > 0 ? product.images : []
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12">
-      <div className="container mx-auto px-4 max-w-7xl">
-        {/* Breadcrumb */}
-        <div className="mb-8">
-          <nav className="flex items-center space-x-2 text-sm text-gray-600">
-            <Link href="/" className="hover:text-blue-600">Home</Link>
-            <span>/</span>
-            <Link href="/allcategories" className="hover:text-blue-600">Products</Link>
-            <span>/</span>
-            <span className="text-gray-900 font-medium">{product.name}</span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Breadcrumb Section */}
+      <div className="bg-white border-b">
+        <div className="container mx-auto px-4 max-w-7xl py-4">
+          <nav className="flex items-center space-x-2 text-sm">
+            <Link href="/" className="text-gray-600 hover:text-blue-600 transition-colors">Home</Link>
+            <span className="text-gray-400">/</span>
+            <Link href="/allcategories" className="text-gray-600 hover:text-blue-600 transition-colors">Products</Link>
+            <span className="text-gray-400">/</span>
+            <span className="text-gray-900 font-medium truncate max-w-xs">{product.name}</span>
           </nav>
         </div>
+      </div>
 
-        {/* Product Detail Card */}
-        <Card className="overflow-hidden shadow-2xl border-2">
-          <div className="grid md:grid-cols-2 gap-0">
-            {/* Left Side - Product Images */}
-            <div className="bg-white p-8">
-              {/* Main Image */}
-              <div className="relative h-96 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden mb-6 flex items-center justify-center">
+      {/* Main Product Section */}
+      <div className="container mx-auto px-4 max-w-7xl py-12">
+        <div className="grid lg:grid-cols-2 gap-12">
+          {/* Left Column - Images */}
+          <div className="space-y-6">
+            {/* Main Image */}
+            <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+              <div className="aspect-square relative group">
                 {images.length > 0 ? (
                   <Image
                     src={images[selectedImage]}
                     alt={product.name}
-                    width={600}
-                    height={600}
-                    className="w-full h-full object-contain p-4"
+                    fill
+                    className="object-contain p-8"
                   />
                 ) : (
-                  <ShoppingCart className="h-32 w-32 text-gray-400" />
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <ShoppingCart className="h-32 w-32 text-gray-300" />
+                  </div>
                 )}
                 
                 {/* Stock Badge */}
-                {product.stock > 0 ? (
-                  <Badge className="absolute top-4 right-4 bg-green-500 text-white px-4 py-2 text-sm">
-                    <Check className="h-4 w-4 mr-1 inline" />
-                    In Stock
-                  </Badge>
-                ) : (
-                  <Badge className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 text-sm">
-                    Out of Stock
-                  </Badge>
-                )}
+                <div className="absolute top-6 right-6">
+                  {product.stock > 0 ? (
+                    <Badge className="bg-green-500 text-white px-4 py-2 text-sm font-semibold shadow-lg">
+                      <Check className="h-4 w-4 mr-1 inline" />
+                      In Stock
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-red-500 text-white px-4 py-2 text-sm font-semibold shadow-lg">
+                      Out of Stock
+                    </Badge>
+                  )}
+                </div>
 
                 {/* Image Navigation */}
                 {images.length > 1 && (
                   <>
                     <button
                       onClick={() => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white hover:bg-gray-50 p-3 rounded-full shadow-xl border border-gray-200 opacity-0 group-hover:opacity-100 transition-all duration-300"
                     >
                       <ChevronLeft className="h-6 w-6 text-gray-700" />
                     </button>
                     <button
                       onClick={() => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white hover:bg-gray-50 p-3 rounded-full shadow-xl border border-gray-200 opacity-0 group-hover:opacity-100 transition-all duration-300"
                     >
                       <ChevronRight className="h-6 w-6 text-gray-700" />
                     </button>
                   </>
                 )}
+
+                {/* Action Icons */}
+                <div className="absolute top-6 left-6 flex flex-col gap-3">
+                  <button className="bg-white hover:bg-red-50 p-3 rounded-full shadow-lg border border-gray-200 transition-colors">
+                    <Heart className="h-5 w-5 text-gray-700 hover:text-red-500" />
+                  </button>
+                  <button className="bg-white hover:bg-blue-50 p-3 rounded-full shadow-lg border border-gray-200 transition-colors">
+                    <Share2 className="h-5 w-5 text-gray-700 hover:text-blue-500" />
+                  </button>
+                </div>
               </div>
 
               {/* Thumbnail Images */}
               {images.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto pb-2">
-                  {images.map((img, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                        selectedImage === index ? 'border-blue-600 ring-2 ring-blue-200' : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <Image
-                        src={img}
-                        alt={`${product.name} - ${index + 1}`}
-                        width={80}
-                        height={80}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
+                <div className="p-4 bg-gray-50 border-t">
+                  <div className="flex gap-3 overflow-x-auto pb-2">
+                    {images.map((img, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImage(index)}
+                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                          selectedImage === index 
+                            ? 'border-blue-600 ring-2 ring-blue-200 shadow-md' 
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        <Image
+                          src={img}
+                          alt={`${product.name} - ${index + 1}`}
+                          width={80}
+                          height={80}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Right Side - Product Details */}
-            <CardContent className="p-8 bg-white flex flex-col">
-              {/* Category Badge */}
-              <Badge variant="secondary" className="mb-4 w-fit text-sm px-3 py-1">
+            {/* Trust Badges */}
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { icon: Truck, text: "Fast Delivery", color: "blue" },
+                { icon: Shield, text: "Secure", color: "green" },
+                { icon: Award, text: "Quality", color: "yellow" },
+                { icon: RefreshCw, text: "Easy Return", color: "purple" }
+              ].map((item, index) => (
+                <div key={index} className="bg-white rounded-xl p-4 text-center shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                  <item.icon className={`h-6 w-6 mx-auto mb-2 text-${item.color}-600`} />
+                  <p className="text-xs font-medium text-gray-700">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Column - Product Details */}
+          <div className="space-y-8">
+            {/* Category & Rating */}
+            <div className="space-y-4">
+              <Badge variant="secondary" className="text-sm px-4 py-1.5 font-medium">
                 {product.category?.split('>')[0]?.trim()}
               </Badge>
 
-              {/* Product Name */}
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
                 {product.name}
               </h1>
 
-              {/* Rating */}
-              <div className="flex items-center space-x-2 mb-6">
-                <div className="flex">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star key={star} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-                <span className="text-sm text-gray-600">(4.8/5.0 - 124 reviews)</span>
+                <span className="text-sm text-gray-600 font-medium">4.8/5.0</span>
+                <span className="text-sm text-gray-400">|</span>
+                <span className="text-sm text-gray-600">124 Reviews</span>
               </div>
+            </div>
 
-              {/* Price */}
-              <div className="mb-6">
-                <div className="flex items-baseline space-x-3">
-                  <span className="text-5xl font-bold text-blue-600">
-                    ₹{product.price.toLocaleString()}
-                  </span>
-                  <span className="text-xl text-gray-400 line-through">
-                    ₹{Math.round(product.price * 1.2).toLocaleString()}
-                  </span>
-                  <Badge className="bg-green-100 text-green-700 text-sm">
-                    Save 20%
-                  </Badge>
-                </div>
-                <p className="text-sm text-gray-600 mt-2">Inclusive of all taxes</p>
+            {/* Price Section */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+              <div className="flex items-baseline gap-4 mb-2">
+                <span className="text-5xl font-bold text-blue-600">
+                  ₹{product.price.toLocaleString()}
+                </span>
+                <span className="text-2xl text-gray-400 line-through">
+                  ₹{Math.round(product.price * 1.2).toLocaleString()}
+                </span>
+                <Badge className="bg-green-500 text-white text-base px-3 py-1">
+                  Save 20%
+                </Badge>
               </div>
+              <p className="text-sm text-gray-600">Inclusive of all taxes • Free shipping on orders above ₹5000</p>
+            </div>
 
-              {/* Description */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Product Description</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {product.description || "High-quality product designed for your business needs. Built with premium materials and attention to detail."}
-                </p>
+            {/* Description */}
+            <div className="space-y-3">
+              <h3 className="text-xl font-bold text-gray-900">Product Description</h3>
+              <p className="text-gray-600 leading-relaxed text-base">
+                {product.description || "High-quality product designed for your business needs. Built with premium materials and attention to detail."}
+              </p>
+            </div>
+
+            {/* Key Features */}
+            <div className="space-y-3">
+              <h3 className="text-xl font-bold text-gray-900">Key Features</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { icon: Truck, title: "Fast Delivery", desc: "2-3 business days", color: "blue" },
+                  { icon: Shield, title: "Quality Assured", desc: "100% genuine", color: "green" },
+                  { icon: Star, title: "Top Rated", desc: "4.8/5 rating", color: "yellow" },
+                  { icon: Clock, title: "24/7 Support", desc: "Always available", color: "purple" }
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
+                    <div className={`p-2 rounded-lg bg-${feature.color}-50`}>
+                      <feature.icon className={`h-5 w-5 text-${feature.color}-600`} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{feature.title}</p>
+                      <p className="text-xs text-gray-600">{feature.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
 
-              {/* Features */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                  <Truck className="h-6 w-6 text-blue-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Fast Delivery</p>
-                    <p className="text-xs text-gray-600">2-3 business days</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                  <Shield className="h-6 w-6 text-green-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Quality Assured</p>
-                    <p className="text-xs text-gray-600">100% genuine</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
-                  <Star className="h-6 w-6 text-yellow-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Top Rated</p>
-                    <p className="text-xs text-gray-600">4.8/5 rating</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                  <Clock className="h-6 w-6 text-purple-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">24/7 Support</p>
-                    <p className="text-xs text-gray-600">Always available</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stock Info */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Available Stock:</span>
-                  <span className={`text-lg font-bold ${product.stock > 10 ? "text-green-600" : "text-orange-600"}`}>
+            {/* Stock & Cart Info */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Available Stock</p>
+                  <p className={`text-2xl font-bold ${product.stock > 10 ? "text-green-600" : "text-orange-600"}`}>
                     {product.stock} units
-                  </span>
+                  </p>
                 </div>
                 {getCartQuantity() > 0 && (
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                    <span className="text-sm text-gray-700">In your cart:</span>
-                    <Badge className="bg-green-100 text-green-700">
-                      {getCartQuantity()} items
-                    </Badge>
-                  </div>
+                  <Badge className="bg-green-100 text-green-700 text-base px-4 py-2">
+                    {getCartQuantity()} in cart
+                  </Badge>
                 )}
               </div>
 
               {/* Quantity Selector */}
-              <div className="mb-6">
-                <label className="text-sm font-semibold text-gray-900 mb-2 block">Quantity</label>
-                <div className="flex items-center space-x-4">
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-900">Select Quantity</label>
+                <div className="flex items-center gap-4">
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     disabled={quantity <= 1}
-                    className="h-12 w-12"
+                    className="h-12 w-12 rounded-lg border-2"
                   >
-                    -
+                    <span className="text-xl">−</span>
                   </Button>
-                  <span className="text-2xl font-bold text-gray-900 w-16 text-center">
+                  <span className="text-3xl font-bold text-gray-900 w-20 text-center">
                     {quantity}
                   </span>
                   <Button
@@ -367,53 +393,55 @@ export default function ProductDetailPage() {
                     size="icon"
                     onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
                     disabled={quantity >= product.stock}
-                    className="h-12 w-12"
+                    className="h-12 w-12 rounded-lg border-2"
                   >
-                    +
+                    <span className="text-xl">+</span>
                   </Button>
                 </div>
               </div>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-4 mt-auto">
-                <Button
-                  onClick={addToCart}
-                  disabled={product.stock === 0}
-                  variant="outline"
-                  className="flex-1 h-14 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400 text-lg font-semibold"
-                >
-                  <ShoppingCart className="h-5 w-5 mr-2" />
-                  Add to Cart
-                </Button>
-                <Button
-                  onClick={handleBuyNow}
-                  disabled={product.stock === 0}
-                  className="flex-1 h-14 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold disabled:bg-gray-400"
-                >
-                  Buy Now
-                </Button>
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <Button
+                onClick={addToCart}
+                disabled={product.stock === 0}
+                variant="outline"
+                className="flex-1 h-14 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400 text-lg font-semibold rounded-xl"
+              >
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Add to Cart
+              </Button>
+              <Button
+                onClick={handleBuyNow}
+                disabled={product.stock === 0}
+                className="flex-1 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-lg font-semibold disabled:bg-gray-400 rounded-xl shadow-lg"
+              >
+                Buy Now
+              </Button>
+            </div>
+
+            {/* Additional Info */}
+            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <Truck className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-gray-900">Free Delivery</p>
+                  <p className="text-xs text-gray-600">Above ₹5000</p>
+                </div>
+                <div>
+                  <Shield className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-gray-900">Secure Payment</p>
+                  <p className="text-xs text-gray-600">100% Safe</p>
+                </div>
+                <div>
+                  <Clock className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-gray-900">24/7 Support</p>
+                  <p className="text-xs text-gray-600">Always Here</p>
+                </div>
               </div>
-            </CardContent>
+            </div>
           </div>
-        </Card>
-
-        {/* Additional Information */}
-        <div className="mt-12 grid md:grid-cols-3 gap-6">
-          <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-            <Truck className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 mb-2">Free Delivery</h3>
-            <p className="text-sm text-gray-600">On orders above ₹5000</p>
-          </Card>
-          <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-            <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 mb-2">Secure Payment</h3>
-            <p className="text-sm text-gray-600">100% secure transactions</p>
-          </Card>
-          <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-            <Clock className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 mb-2">24/7 Support</h3>
-            <p className="text-sm text-gray-600">Always here to help</p>
-          </Card>
         </div>
       </div>
     </div>
