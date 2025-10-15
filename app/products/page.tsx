@@ -47,6 +47,22 @@ export default function ProductDetailPage() {
     // Fetch product details
     const fetchProduct = async () => {
       if (!productId) {
+        // Show dummy data if no product ID
+        setProduct({
+          _id: "dummy-product-1",
+          name: "Premium Office Chair - Ergonomic Design",
+          price: 12500,
+          description: "Experience ultimate comfort with our premium ergonomic office chair. Designed for long working hours, this chair features adjustable height, lumbar support, breathable mesh back, and smooth-rolling casters. Perfect for home offices and corporate environments. Built with high-quality materials to ensure durability and long-lasting comfort.",
+          images: [
+            "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=800",
+            "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=800",
+            "https://images.unsplash.com/photo-1581539250439-c96689b516dd?w=800"
+          ],
+          category: "Office Furniture > Chairs > Executive Chairs",
+          subCategory: "Chairs",
+          level2Category: "Executive Chairs",
+          stock: 45
+        })
         setLoading(false)
         return
       }
