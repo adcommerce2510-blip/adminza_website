@@ -209,22 +209,26 @@ export default function ProductDetailPage() {
             {/* Thumbnails */}
             {images.length > 1 && (
               <div className="mt-6">
-                <div className="flex gap-4 justify-start">
+                <div className="flex gap-6 justify-start items-center">
                   {images.map((img, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                      className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition-all ${
                         selectedImage === index 
-                          ? 'border-blue-600 ring-2 ring-blue-200 shadow-md' 
-                          : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
+                          ? 'border-blue-600 ring-4 ring-blue-200 shadow-lg' 
+                          : 'border-gray-300 hover:border-gray-400 hover:shadow-md'
                       }`}
+                      style={{ 
+                        flexShrink: 0,
+                        marginRight: index < images.length - 1 ? '0' : '0'
+                      }}
                     >
                       <Image
                         src={img}
                         alt={`Thumbnail ${index + 1}`}
-                        width={80}
-                        height={80}
+                        width={96}
+                        height={96}
                         className="w-full h-full object-cover"
                       />
                     </button>
