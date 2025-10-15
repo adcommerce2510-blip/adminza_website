@@ -251,7 +251,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Price */}
-            <div className="mb-8">
+            <div className="mb-6">
               <div className="flex items-baseline gap-3 mb-2">
                 <span className="text-4xl font-semibold text-gray-900">
                   ₹{product.price.toLocaleString()}
@@ -262,6 +262,53 @@ export default function ProductDetailPage() {
                 <span className="text-sm font-medium text-green-600">20% off</span>
               </div>
               <p className="text-sm text-gray-600">Inclusive of all taxes</p>
+            </div>
+
+            {/* Quantity Selector */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-gray-900 mb-3 block">Quantity</label>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="w-12 text-center text-lg font-medium">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                  disabled={quantity >= product.stock}
+                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+                {getCartQuantity() > 0 && (
+                  <span className="ml-auto text-sm text-gray-600">
+                    {getCartQuantity()} in cart
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 mb-8 pb-8 border-b">
+              <Button
+                onClick={addToCart}
+                disabled={product.stock === 0}
+                variant="outline"
+                className="flex-1 h-12 border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Add to Cart
+              </Button>
+              <Button
+                onClick={handleBuyNow}
+                disabled={product.stock === 0}
+                className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Buy Now
+              </Button>
             </div>
 
             {/* Stock Status */}
@@ -321,52 +368,6 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Quantity Selector */}
-            <div className="mb-6">
-              <label className="text-sm font-medium text-gray-900 mb-3 block">Quantity</label>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <span className="w-12 text-center text-lg font-medium">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  disabled={quantity >= product.stock}
-                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-                {getCartQuantity() > 0 && (
-                  <span className="ml-auto text-sm text-gray-600">
-                    {getCartQuantity()} in cart
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-4">
-              <Button
-                onClick={addToCart}
-                disabled={product.stock === 0}
-                variant="outline"
-                className="flex-1 h-12 border-blue-600 text-blue-600 hover:bg-blue-50"
-              >
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Add to Cart
-              </Button>
-              <Button
-                onClick={handleBuyNow}
-                disabled={product.stock === 0}
-                className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Buy Now
-              </Button>
-            </div>
           </div>
         </div>
       </div>
