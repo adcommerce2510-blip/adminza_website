@@ -208,24 +208,28 @@ export default function ProductDetailPage() {
 
             {/* Thumbnails */}
             {images.length > 1 && (
-              <div className="grid grid-cols-3 gap-3 mt-4">
-                {images.map((img, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <Image
-                      src={img}
-                      alt={`View ${index + 1}`}
-                      width={120}
-                      height={120}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
+              <div className="mt-6">
+                <div className="flex gap-4 justify-start">
+                  {images.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                        selectedImage === index 
+                          ? 'border-blue-600 ring-2 ring-blue-200 shadow-md' 
+                          : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
+                      }`}
+                    >
+                      <Image
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
