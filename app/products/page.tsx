@@ -208,32 +208,38 @@ export default function ProductDetailPage() {
 
             {/* Thumbnails */}
             {images.length > 1 && (
-              <div className="mt-6">
-                <div className="flex gap-6 justify-start items-center">
+              <div className="mt-8">
+                <div className="flex gap-8 justify-start items-center">
                   {images.map((img, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`w-28 h-28 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
                         selectedImage === index 
-                          ? 'border-blue-600 ring-4 ring-blue-200 shadow-lg' 
-                          : 'border-gray-300 hover:border-gray-400 hover:shadow-md'
+                          ? 'border-blue-600 ring-4 ring-blue-200 shadow-xl scale-105' 
+                          : 'border-gray-200 hover:border-gray-400 hover:shadow-lg hover:scale-102'
                       }`}
                       style={{ 
                         flexShrink: 0,
-                        marginRight: index < images.length - 1 ? '0' : '0'
+                        minWidth: '112px',
+                        minHeight: '112px'
                       }}
                     >
-                      <Image
-                        src={img}
-                        alt={`Thumbnail ${index + 1}`}
-                        width={96}
-                        height={96}
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="relative w-full h-full bg-gray-50 flex items-center justify-center">
+                        <Image
+                          src={img}
+                          alt={`Product view ${index + 1}`}
+                          width={112}
+                          height={112}
+                          className="w-full h-full object-cover"
+                          placeholder="blur"
+                          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+                        />
+                      </div>
                     </button>
                   ))}
                 </div>
+                <p className="text-xs text-gray-500 mt-3 text-center">Click to view different angles</p>
               </div>
             )}
           </div>
