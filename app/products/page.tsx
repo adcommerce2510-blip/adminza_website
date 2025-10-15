@@ -208,20 +208,20 @@ export default function ProductDetailPage() {
 
             {/* Thumbnails */}
             {images.length > 1 && (
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-3 mt-4">
                 {images.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`flex-1 aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index ? 'border-blue-600' : 'border-gray-200 hover:border-gray-300'
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedImage === index ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <Image
                       src={img}
                       alt={`View ${index + 1}`}
-                      width={100}
-                      height={100}
+                      width={120}
+                      height={120}
                       className="w-full h-full object-cover"
                     />
                   </button>
