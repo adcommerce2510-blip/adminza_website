@@ -25,54 +25,79 @@ export default function ProductDetailPage() {
   const searchParams = useSearchParams()
   const productId = searchParams.get('id')
   
-  const [product, setProduct] = useState<Product | null>(null)
+  const [product, setProduct] = useState<Product | null>({
+    _id: "default-product",
+    name: "Loading Product...",
+    price: 0,
+    description: "Loading product details...",
+    images: [],
+    category: "Loading...",
+    stock: 0
+  })
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [cartItems, setCartItems] = useState<any[]>([])
 
   useEffect(() => {
-    const savedCart = localStorage.getItem("cart")
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart))
-      } catch (error) {
-        console.error("Error parsing cart data:", error)
-        setCartItems([])
+    // Load cart items from localStorage (client-side only)
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem("cart")
+      if (savedCart) {
+        try {
+          setCartItems(JSON.parse(savedCart))
+        } catch (error) {
+          console.error("Error parsing cart data:", error)
+          setCartItems([])
+        }
       }
     }
 
     const fetchProduct = async () => {
-      if (!productId) {
-        setProduct({
-          _id: "dummy-product-1",
-          name: "Premium Office Chair - Ergonomic Design",
-          price: 12500,
-          description: "Experience ultimate comfort with our premium ergonomic office chair. Designed for long working hours, this chair features adjustable height, lumbar support, breathable mesh back, and smooth-rolling casters. Perfect for home offices and corporate environments. Built with high-quality materials to ensure durability and long-lasting comfort.",
-          images: [
-            "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=800",
-            "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=800",
-            "https://images.unsplash.com/photo-1581539250439-c96689b516dd?w=800"
-          ],
-          category: "Office Furniture > Chairs > Executive Chairs",
-          subCategory: "Chairs",
-          level2Category: "Executive Chairs",
-          stock: 45
-        })
-        setLoading(false)
-        return
-      }
-
       try {
-        const response = await fetch(`/api/products/${productId}`)
-        if (response.ok) {
-          const result = await response.json()
-          if (result.success && result.data) {
-            setProduct(result.data)
+        if (!productId) {
+          // Show dummy data if no product ID
+          setProduct({
+            _id: "dummy-product-1",
+            name: "Premium Office Chair - Ergonomic Design",
+            price: 12500,
+            description: "Experience ultimate comfort with our premium ergonomic office chair. Designed for long working hours, this chair features adjustable height, lumbar support, breathable mesh back, and smooth-rolling casters. Perfect for home offices and corporate environments. Built with high-quality materials to ensure durability and long-lasting comfort.",
+            images: [
+              "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=800",
+              "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=800",
+              "https://images.unsplash.com/photo-1581539250439-c96689b516dd?w=800"
+            ],
+            category: "Office Furniture > Chairs > Executive Chairs",
+            subCategory: "Chairs",
+            level2Category: "Executive Chairs",
+            stock: 45
+          })
+        } else {
+          // Fetch real product data
+          const response = await fetch(`/api/products/${productId}`)
+          if (response.ok) {
+            const result = await response.json()
+            if (result.success && result.data) {
+              setProduct(result.data)
+            } else {
+              console.error("API response error:", result)
+            }
+          } else {
+            console.error("Failed to fetch product:", response.status)
           }
         }
       } catch (error) {
         console.error("Error fetching product:", error)
+        // Set dummy data as fallback
+        setProduct({
+          _id: "fallback-product",
+          name: "Sample Product",
+          price: 1000,
+          description: "This is a sample product for demonstration purposes.",
+          images: ["https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=800"],
+          category: "Sample Category",
+          stock: 10
+        })
       } finally {
         setLoading(false)
       }
@@ -127,7 +152,7 @@ export default function ProductDetailPage() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Loading product details...</p>
         </div>
       </div>
     )
