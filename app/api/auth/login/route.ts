@@ -4,8 +4,10 @@ import Customer from '@/models/Customer'
 
 export async function POST(request: NextRequest) {
   try {
+    // Connect to database
     await dbConnect()
 
+    // Parse request body
     const body = await request.json()
     const { username, password } = body
 

@@ -8,16 +8,16 @@ export async function GET(
 ) {
   try {
     await dbConnect()
-    
+
     const product = await Product.findById(params.id)
-    
+
     if (!product) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
       )
     }
-    
+
     return NextResponse.json({
       success: true,
       data: product
@@ -37,17 +37,17 @@ export async function PUT(
 ) {
   try {
     await dbConnect()
-    
+
     const body = await request.json()
     const product = await Product.findByIdAndUpdate(params.id, body, { new: true })
-    
+
     if (!product) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
       )
     }
-    
+
     return NextResponse.json({
       success: true,
       data: product
@@ -67,16 +67,16 @@ export async function DELETE(
 ) {
   try {
     await dbConnect()
-    
+
     const product = await Product.findByIdAndDelete(params.id)
-    
+
     if (!product) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
       )
     }
-    
+
     return NextResponse.json({
       success: true,
       message: 'Product deleted successfully'

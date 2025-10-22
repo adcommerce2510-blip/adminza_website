@@ -14,13 +14,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 })
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
     }
 
     // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File size must be less than 5MB' }, { status: 400 })
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      return NextResponse.json({ error: 'File too large' }, { status: 400 })
     }
 
     const bytes = await file.arrayBuffer()
@@ -35,11 +37,10 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
-    const fileExtension = file.name.split('.').pop()
-    const fileName = `${timestamp}-${randomString}.${fileExtension}`
+    const fileName = `${timestamp}-${randomString}.${file.name.split('.').pop()}`
     const filePath = join(uploadsDir, fileName)
 
-    // Save file
+    // Write file
     await writeFile(filePath, buffer)
 
     // Return file URL
@@ -47,11 +48,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      imageUrl,
-      fileName
+      url: imageUrl,
+      fileName: fileName
     })
   } catch (error) {
     console.error('Upload error:', error)
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to upload file' },
+      { status: 500 }
+    )
   }
 }

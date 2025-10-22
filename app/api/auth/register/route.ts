@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       username: username.toLowerCase(),
       email: email.toLowerCase(),
       phone,
-      password, // Stored as plain text per requirement
+      password, // Store as plain text per requirement
       address,
       city,
       state,
@@ -61,13 +61,12 @@ export async function POST(request: NextRequest) {
       state: customer.state,
       zipCode: customer.zipCode,
       country: customer.country,
-      gstNumber: customer.gstNumber,
       status: customer.status
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Customer registered successfully',
+      message: 'Registration successful',
       customer: customerData
     })
   } catch (error: any) {

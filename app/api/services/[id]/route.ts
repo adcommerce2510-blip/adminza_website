@@ -8,16 +8,16 @@ export async function GET(
 ) {
   try {
     await dbConnect()
-    
+
     const service = await Service.findById(params.id)
-    
+
     if (!service) {
       return NextResponse.json(
         { error: 'Service not found' },
         { status: 404 }
       )
     }
-    
+
     return NextResponse.json({
       success: true,
       data: service
@@ -37,17 +37,17 @@ export async function PUT(
 ) {
   try {
     await dbConnect()
-    
+
     const body = await request.json()
     const service = await Service.findByIdAndUpdate(params.id, body, { new: true })
-    
+
     if (!service) {
       return NextResponse.json(
         { error: 'Service not found' },
         { status: 404 }
       )
     }
-    
+
     return NextResponse.json({
       success: true,
       data: service
@@ -67,16 +67,16 @@ export async function DELETE(
 ) {
   try {
     await dbConnect()
-    
+
     const service = await Service.findByIdAndDelete(params.id)
-    
+
     if (!service) {
       return NextResponse.json(
         { error: 'Service not found' },
         { status: 404 }
       )
     }
-    
+
     return NextResponse.json({
       success: true,
       message: 'Service deleted successfully'

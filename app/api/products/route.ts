@@ -1,32 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongodb'
 import Product from '@/models/Product'
-import Service from '@/models/Service'
 
 export async function GET(request: NextRequest) {
   try {
     await dbConnect()
-    
+
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const subcategory = searchParams.get('subcategory')
     const subSubcategory = searchParams.get('subSubcategory')
-    
+
     let query: any = {}
-    
-    if (subSubcategory) {
+
+    // Build hierarchical category query
+    if (subSubcategory && subcategory && category) {
       // Level 2 category - most specific
-      query.level2Category = { $regex: subSubcategory, $options: 'i' }
-    } else if (subcategory) {
-      // Subcategory
-      query.subcategory = { $regex: subcategory, $options: 'i' }
+      query = {
+        $or: [
+          { category: `${category}/${subcategory}/${subSubcategory}` },
+          { level2Category: subSubcategory, subcategory: subcategory, category: category }
+        ]
+      }
+    } else if (subcategory && category) {
+      // Subcategory level
+      query = {
+        $or: [
+          { category: `${category}/${subcategory}` },
+          { subcategory: subcategory, category: category }
+        ]
+      }
     } else if (category) {
-      // Main category
-      query.category = { $regex: category, $options: 'i' }
+      // Main category level
+      query = {
+        $or: [
+          { category: { $regex: `^${category}`, $options: 'i' } },
+          { category: category }
+        ]
+      }
     }
-    
+
     const products = await Product.find(query).sort({ createdAt: -1 })
-    
+
     return NextResponse.json({
       success: true,
       data: products
@@ -43,11 +58,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect()
-    
+
     const body = await request.json()
     const product = new Product(body)
     await product.save()
-    
+
     return NextResponse.json({
       success: true,
       data: product
