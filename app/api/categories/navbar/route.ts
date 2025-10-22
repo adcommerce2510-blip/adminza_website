@@ -6,11 +6,53 @@ import Level2Category from '@/models/Level2Category'
 
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect()
+    // Try to connect to database
+    try {
+      await dbConnect()
+    } catch (dbError) {
+      console.error('Database connection error:', dbError)
+      // Return empty data if database connection fails
+      return NextResponse.json({
+        success: true,
+        data: [],
+        message: 'Database connection failed, returning empty categories'
+      })
+    }
     
-    const categories = await Category.find().sort({ createdAt: 1 })
-    const subCategories = await SubCategory.find().sort({ createdAt: 1 })
-    const level2Categories = await Level2Category.find().sort({ createdAt: 1 })
+    // Fetch categories with error handling
+    let categories = []
+    let subCategories = []
+    let level2Categories = []
+    
+    try {
+      categories = await Category.find().sort({ createdAt: 1 })
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      categories = []
+    }
+    
+    try {
+      subCategories = await SubCategory.find().sort({ createdAt: 1 })
+    } catch (error) {
+      console.error('Error fetching subcategories:', error)
+      subCategories = []
+    }
+    
+    try {
+      level2Categories = await Level2Category.find().sort({ createdAt: 1 })
+    } catch (error) {
+      console.error('Error fetching level2 categories:', error)
+      level2Categories = []
+    }
+    
+    // If no categories found, return empty array
+    if (!categories || categories.length === 0) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        message: 'No categories found in database'
+      })
+    }
     
     // Build navbar data structure
     const navbarData = categories.map(category => {
@@ -50,9 +92,14 @@ export async function GET(request: NextRequest) {
       data: navbarData
     })
   } catch (error) {
-    console.error('Error fetching navbar categories:', error)
+    console.error('Error in navbar categories API:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch categories' },
+      { 
+        success: false,
+        error: 'Failed to fetch categories',
+        data: [],
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
