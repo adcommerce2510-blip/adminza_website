@@ -56,7 +56,7 @@ export function AnimatedWrapper({
 }
 
 interface StaggeredContainerProps {
-  children: ReactNode[]
+  children: ReactNode | ReactNode[]
   className?: string
   staggerDelay?: number
 }
@@ -68,9 +68,12 @@ export function StaggeredContainer({
 }: StaggeredContainerProps) {
   const { ref, isInView } = useScrollAnimation()
 
+  // Ensure children is always an array
+  const childrenArray = Array.isArray(children) ? children : [children]
+
   return (
     <div ref={ref} className={className}>
-      {children.map((child, index) => (
+      {childrenArray.map((child, index) => (
         <div
           key={index}
           className={`transition-all duration-800 ease-out ${

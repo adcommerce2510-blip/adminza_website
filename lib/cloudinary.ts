@@ -7,17 +7,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-export const uploadToCloudinary = async (file: File): Promise<string> => {
+export const uploadToCloudinary = async (buffer: Buffer, folder: string = 'adminzaa'): Promise<string> => {
   try {
-    // Convert file to base64
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    // Convert buffer to base64
     const base64 = buffer.toString('base64')
-    const dataURI = `data:${file.type};base64,${base64}`
+    const dataURI = `data:image/jpeg;base64,${base64}`
 
     // Upload to Cloudinary
     const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'adminzaa',
+      folder: folder,
       resource_type: 'auto',
     })
 

@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Search, ShoppingCart, User, Menu, Phone, Mail, LogOut } from "lucide-react"
 import Link from "next/link"
-import { NavigationDropdown } from "./navigation-dropdown"
+import { DynamicNavbar } from "./dynamic-navbar"
+import { SecondaryNavbar } from "./secondary-navbar"
 import { CartDropdown } from "./cart-dropdown"
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -692,13 +693,7 @@ export function Header() {
 
       <div className="border-t bg-card relative overflow-visible">
         <div className="w-full px-4 overflow-visible">
-          <nav className="hidden lg:flex items-center justify-start space-x-0 h-16 overflow-visible">
-            {navigationData.map((item, index) => (
-              <div key={index} className="relative overflow-visible">
-                <NavigationDropdown title={item.title} subcategories={item.subcategories} />
-              </div>
-            ))}
-          </nav>
+          <SecondaryNavbar />
         </div>
       </div>
 

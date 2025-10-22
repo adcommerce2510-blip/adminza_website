@@ -3,6 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IProduct extends Document {
   name: string
   category: string
+  subcategory?: string
+  level2Category?: string
   price: number
   stock: number
   description: string
@@ -26,6 +28,14 @@ const ProductSchema: Schema = new Schema({
   category: {
     type: String,
     required: [true, 'Category is required'],
+    trim: true
+  },
+  subcategory: {
+    type: String,
+    trim: true
+  },
+  level2Category: {
+    type: String,
     trim: true
   },
   price: {

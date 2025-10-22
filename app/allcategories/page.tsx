@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -142,8 +144,11 @@ export default function AllCategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen">
+      <Header />
+      
+      <div className="bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">All Categories</h1>
@@ -282,7 +287,10 @@ export default function AllCategoriesPage() {
             </div>
           </>
         )}
+        </div>
       </div>
+      
+      <Footer />
     </div>
   )
 }

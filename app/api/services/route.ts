@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
-import Service from '@/models/Service'
+import { NextRequest, NextResponse } from "next/server"
+import connectDB from "@/lib/mongodb"
+import Service from "@/models/Service"
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,48 +8,69 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
-    const search = searchParams.get('search')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const subcategory = searchParams.get('subcategory')
+    const subSubcategory = searchParams.get('subSubcategory')
     
-    const query: any = {}
+    let query: any = {}
     
-    if (category && category !== 'all') {
-      query.category = category
+    if (subSubcategory) {
+      // Level 2 category filtering
+      const subSubcategoryName = subSubcategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      query = {
+        $or: [
+          { category: { $regex: subSubcategoryName, $options: 'i' } },
+          { subcategory: { $regex: subSubcategoryName, $options: 'i' } },
+          { level2Category: { $regex: subSubcategoryName, $options: 'i' } }
+        ]
+      }
+    } else if (subcategory) {
+      // Sub category filtering - show services that belong to this subcategory
+      // Handle format like "main/sub" in the category field
+      const mainCategory = category?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || ''
+      const subcategoryName = subcategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      
+      if (mainCategory) {
+        // If we have both main category and subcategory, search for exact "main/sub" format
+        query = {
+          $or: [
+            { category: { $regex: `^${mainCategory}/${subcategoryName}$`, $options: 'i' } }, // Exact "main/sub" format
+            { category: { $regex: `^${mainCategory}/${subcategoryName}/`, $options: 'i' } }, // "main/sub/level2" format
+            { subcategory: { $regex: subcategoryName, $options: 'i' } } // Fallback to subcategory field
+          ]
+        }
+      } else {
+        // If we only have subcategory, search more broadly
+        query = {
+          $or: [
+            { category: { $regex: `/${subcategoryName}$`, $options: 'i' } }, // Ends with "/sub"
+            { category: { $regex: `/${subcategoryName}/`, $options: 'i' } }, // Contains "/sub/"
+            { subcategory: { $regex: subcategoryName, $options: 'i' } } // Fallback to subcategory field
+          ]
+        }
+      }
+    } else if (category) {
+      // Main category filtering - handle hierarchical format "main/sub"
+      const categoryName = category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      query = {
+        $or: [
+          { category: { $regex: `^${categoryName}`, $options: 'i' } }, // Starts with main category
+          { category: { $regex: `.*${categoryName}/.*`, $options: 'i' } }, // Contains main/sub
+          { subcategory: { $regex: categoryName, $options: 'i' } } // Fallback
+        ]
+      }
     }
     
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { vendor: { $regex: search, $options: 'i' } },
-        { location: { $regex: search, $options: 'i' } }
-      ]
-    }
-    
-    const skip = (page - 1) * limit
-    
-    const services = await Service.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-    
-    const total = await Service.countDocuments(query)
+    const services = await Service.find(query).sort({ createdAt: -1 })
     
     return NextResponse.json({
       success: true,
       data: services,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      count: services.length
     })
   } catch (error) {
-    console.error('Error fetching services:', error)
+    console.error("Error fetching services:", error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch services' },
+      { success: false, error: "Failed to fetch services" },
       { status: 500 }
     )
   }
@@ -60,43 +81,18 @@ export async function POST(request: NextRequest) {
     await connectDB()
     
     const body = await request.json()
-    const { name, category, price, duration, description, location, vendor, images, features, requirements } = body
-    
-    // Validation
-    if (!name || !category || !price || !duration || !description || !location) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
-    
-    const service = new Service({
-      name,
-      category,
-      price: parseFloat(price),
-      duration,
-      description,
-      location,
-      vendor: vendor || 'Admin',
-      images: images || [],
-      features: features || [],
-      requirements: requirements || []
-    })
-    
-    await service.save()
+    const service = new Service(body)
+    const savedService = await service.save()
     
     return NextResponse.json({
       success: true,
-      data: service,
-      message: 'Service created successfully'
-    }, { status: 201 })
+      data: savedService
+    })
   } catch (error) {
-    console.error('Error creating service:', error)
+    console.error("Error creating service:", error)
     return NextResponse.json(
-      { success: false, error: 'Failed to create service' },
+      { success: false, error: "Failed to create service" },
       { status: 500 }
     )
   }
 }
-
-

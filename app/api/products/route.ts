@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
-import Product from '@/models/Product'
+import { NextRequest, NextResponse } from "next/server"
+import connectDB from "@/lib/mongodb"
+import Product from "@/models/Product"
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,47 +8,89 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
-    const search = searchParams.get('search')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const subcategory = searchParams.get('subcategory')
+    const subSubcategory = searchParams.get('subSubcategory')
     
-    const query: any = {}
+    let query: any = {}
     
-    if (category && category !== 'all') {
-      query.category = category
+    if (subSubcategory) {
+      // Level 2 category filtering
+      const subSubcategoryName = subSubcategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      query = {
+        $or: [
+          { category: { $regex: subSubcategoryName, $options: 'i' } },
+          { subcategory: { $regex: subSubcategoryName, $options: 'i' } },
+          { level2Category: { $regex: subSubcategoryName, $options: 'i' } }
+        ]
+      }
+      console.log("Level 2 category filtering:", subSubcategoryName, query)
+    } else if (subcategory) {
+      // Sub category filtering - show products that belong to this subcategory
+      // Handle format like "main/sub" in the category field
+      const mainCategory = category?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || ''
+      const subcategoryName = subcategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      
+      if (mainCategory) {
+        // If we have both main category and subcategory, search for exact "main/sub" format
+        query = {
+          $or: [
+            { category: { $regex: `^${mainCategory}/${subcategoryName}$`, $options: 'i' } }, // Exact "main/sub" format
+            { category: { $regex: `^${mainCategory}/${subcategoryName}/`, $options: 'i' } }, // "main/sub/level2" format
+            { subcategory: { $regex: subcategoryName, $options: 'i' } } // Fallback to subcategory field
+          ]
+        }
+      } else {
+        // If we only have subcategory, search more broadly
+        query = {
+          $or: [
+            { category: { $regex: `/${subcategoryName}$`, $options: 'i' } }, // Ends with "/sub"
+            { category: { $regex: `/${subcategoryName}/`, $options: 'i' } }, // Contains "/sub/"
+            { subcategory: { $regex: subcategoryName, $options: 'i' } } // Fallback to subcategory field
+          ]
+        }
+      }
+      console.log("Sub category filtering:", subcategoryName, "Main:", mainCategory, query)
+    } else if (category) {
+      // Main category filtering - handle hierarchical format "main/sub"
+      const categoryName = category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      query = {
+        $or: [
+          { category: { $regex: `^${categoryName}`, $options: 'i' } }, // Starts with main category
+          { category: { $regex: `.*${categoryName}/.*`, $options: 'i' } }, // Contains main/sub
+          { subcategory: { $regex: categoryName, $options: 'i' } } // Fallback
+        ]
+      }
+      console.log("Main category filtering:", categoryName, query)
     }
     
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { vendor: { $regex: search, $options: 'i' } }
-      ]
+    let products = await Product.find(query).sort({ createdAt: -1 })
+    
+    console.log("Query executed:", query)
+    console.log("Products found:", products.length)
+    console.log("Products data:", products.map(p => ({ name: p.name, category: p.category, subcategory: p.subcategory })))
+    
+    // If no products found for subcategory, try to find products from main category
+    if (products.length === 0 && subcategory) {
+      const mainCategoryName = category?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Main'
+      const fallbackQuery = {
+        $or: [
+          { category: { $regex: mainCategoryName, $options: 'i' } }
+        ]
+      }
+      console.log("No subcategory products found, trying main category:", fallbackQuery)
+      products = await Product.find(fallbackQuery).sort({ createdAt: -1 })
+      console.log("Fallback products found:", products.length)
     }
-    
-    const skip = (page - 1) * limit
-    
-    const products = await Product.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-    
-    const total = await Product.countDocuments(query)
     
     return NextResponse.json({
       success: true,
       data: products,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      count: products.length
     })
   } catch (error) {
-    console.error('Error fetching products:', error)
+    console.error("Error fetching products:", error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch products' },
+      { success: false, error: "Failed to fetch products" },
       { status: 500 }
     )
   }
@@ -59,41 +101,18 @@ export async function POST(request: NextRequest) {
     await connectDB()
     
     const body = await request.json()
-    const { name, category, price, stock, description, images, vendor, tags } = body
-    
-    // Validation
-    if (!name || !category || !price || !description) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
-    
-    const product = new Product({
-      name,
-      category,
-      price: parseFloat(price),
-      stock: parseInt(stock) || 0,
-      description,
-      images: images || [],
-      vendor: vendor || 'Admin',
-      tags: tags || []
-    })
-    
-    await product.save()
+    const product = new Product(body)
+    const savedProduct = await product.save()
     
     return NextResponse.json({
       success: true,
-      data: product,
-      message: 'Product created successfully'
-    }, { status: 201 })
+      data: savedProduct
+    })
   } catch (error) {
-    console.error('Error creating product:', error)
+    console.error("Error creating product:", error)
     return NextResponse.json(
-      { success: false, error: 'Failed to create product' },
+      { success: false, error: "Failed to create product" },
       { status: 500 }
     )
   }
 }
-
-

@@ -80,6 +80,18 @@ const createService = async (serviceData: any) => {
   return data
 }
 
+const uploadFile = async (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('folder', 'products')
+  
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+  })
+  return await response.json()
+}
+
 const deleteProduct = async (id: string) => {
   const response = await fetch(`/api/products/${id}`, {
     method: 'DELETE',
@@ -91,19 +103,6 @@ const deleteProduct = async (id: string) => {
 const deleteService = async (id: string) => {
   const response = await fetch(`/api/services/${id}`, {
     method: 'DELETE',
-  })
-  const data = await response.json()
-  return data
-}
-
-const uploadFile = async (file: File) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('folder', 'adminza')
-  
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
   })
   const data = await response.json()
   return data
@@ -1417,13 +1416,13 @@ export function DashboardPage() {
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      // Build hierarchical category string
+      // Build hierarchical category string using "/" format
       let categoryString = productForm.mainCategory
       if (productForm.subCategory) {
-        categoryString += ` > ${productForm.subCategory}`
+        categoryString += `/${productForm.subCategory}`
       }
       if (productForm.level2Category) {
-        categoryString += ` > ${productForm.level2Category}`
+        categoryString += `/${productForm.level2Category}`
       }
 
       const result = await createProduct({
@@ -1451,13 +1450,13 @@ export function DashboardPage() {
   const handleServiceSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      // Build hierarchical category string
+      // Build hierarchical category string using "/" format
       let categoryString = serviceForm.mainCategory
       if (serviceForm.subCategory) {
-        categoryString += ` > ${serviceForm.subCategory}`
+        categoryString += `/${serviceForm.subCategory}`
       }
       if (serviceForm.level2Category) {
-        categoryString += ` > ${serviceForm.level2Category}`
+        categoryString += `/${serviceForm.level2Category}`
       }
 
       const result = await createService({
@@ -2217,7 +2216,8 @@ export function DashboardPage() {
                               <DialogHeader>
                                 <DialogTitle>Add New Product</DialogTitle>
                               </DialogHeader>
-                              <form onSubmit={handleProductSubmit} className="space-y-4">
+                              <div className="max-h-[80vh] overflow-y-auto">
+                                <form onSubmit={handleProductSubmit} className="space-y-4">
                                 <div>
                                   <Label htmlFor="product-name">Product Name</Label>
                                   <Input
@@ -2324,54 +2324,66 @@ export function DashboardPage() {
                                 </div>
                                 <div>
                                   <Label htmlFor="product-images">Images</Label>
-                                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                                    <div className="text-center">
-                                      <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                                      <div className="mt-4">
-                                        <Label htmlFor="file-upload" className="cursor-pointer">
-                                          <span className="mt-2 block text-sm font-medium text-muted-foreground">
-                                            {uploading ? "Uploading..." : "Click to upload images"}
-                                          </span>
-                                          <Input
-                                            id="file-upload"
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            className="sr-only"
-                                            onChange={async (e) => {
-                                              const files = e.target.files
-                                              if (files) {
-                                                const urls = []
-                                                for (let i = 0; i < files.length; i++) {
-                                                  const url = await handleImageUpload(files[i])
-                                                  if (url) urls.push(url)
-                                                }
-                                                setProductForm({...productForm, images: [...productForm.images, ...urls]})
-                                              }
-                                            }}
-                                          />
-                                        </Label>
-                                      </div>
-                                    </div>
+                                  <div className="mb-2">
+                                    <Button 
+                                      type="button" 
+                                      variant="outline" 
+                                      className="w-full"
+                                      onClick={() => document.getElementById('file-upload')?.click()}
+                                    >
+                                      <Upload className="h-4 w-4 mr-2" />
+                                      {uploading ? "Uploading..." : "Upload Image"}
+                                    </Button>
+                                    <Input
+                                      id="file-upload"
+                                      type="file"
+                                      multiple
+                                      accept="image/*"
+                                      className="sr-only"
+                                      onChange={async (e) => {
+                                        const files = e.target.files
+                                        if (files) {
+                                          const urls = []
+                                          for (let i = 0; i < files.length; i++) {
+                                            const url = await handleImageUpload(files[i])
+                                            if (url) urls.push(url)
+                                          }
+                                          setProductForm({...productForm, images: [...productForm.images, ...urls]})
+                                        }
+                                      }}
+                                    />
                                   </div>
-                                  {productForm.images.length > 0 && (
-                                    <div className="mt-4 grid grid-cols-4 gap-2">
-                                      {productForm.images.map((image, index) => (
-                                        <div key={index} className="relative">
-                                          <img src={image} alt={`Product ${index + 1}`} className="w-full h-20 object-cover rounded" />
-                                          <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                                            onClick={() => setProductForm({...productForm, images: productForm.images.filter((_, i) => i !== index)})}
-                                          >
-                                            ×
-                                          </Button>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
+                                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 min-h-[120px] max-h-[200px] overflow-hidden">
+                                    {productForm.images.length > 0 ? (
+                                      <div className="grid grid-cols-2 gap-2 h-full">
+                                        {productForm.images.map((image, index) => (
+                                          <div key={index} className="relative h-20">
+                                            <img 
+                                              src={image} 
+                                              alt={`Product ${index + 1}`} 
+                                              className="w-full h-full object-cover rounded border"
+                                            />
+                                            <Button
+                                              type="button"
+                                              variant="destructive"
+                                              size="sm"
+                                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full z-10"
+                                              onClick={() => setProductForm({...productForm, images: productForm.images.filter((_, i) => i !== index)})}
+                                            >
+                                              ×
+                                            </Button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-center h-full flex flex-col justify-center">
+                                        <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                                        <span className="mt-2 block text-sm font-medium text-muted-foreground">
+                                          No images uploaded yet
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                                 <div className="flex justify-end space-x-2">
                                   <Button type="button" variant="outline" onClick={() => {
@@ -2385,6 +2397,7 @@ export function DashboardPage() {
                                   </Button>
                                 </div>
                               </form>
+                              </div>
                             </DialogContent>
                           </Dialog>
                           <div className="relative">

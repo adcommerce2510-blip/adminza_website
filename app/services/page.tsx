@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, ShoppingCart, Search, Package } from "lucide-react"
+import { ShoppingCart, Star, Truck, Shield, Clock, Package, ChevronLeft, ChevronRight, Check, Minus, Plus, MessageCircle, Phone, Mail } from "lucide-react"
 import Image from "next/image"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 
 interface Service {
   _id: string
@@ -16,262 +17,340 @@ interface Service {
   description: string
   images?: string[]
   category: string
-  stock: number
+  subCategory?: string
+  level2Category?: string
+  duration?: string
+  location?: string
 }
 
-export default function ServicesPage() {
+export default function ServiceDetailPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const serviceId = searchParams.get('id')
+  const categoryParam = searchParams.get('category')
+  
+  const [service, setService] = useState<Service | null>(null)
   const [services, setServices] = useState<Service[]>([])
-  const [cartItems, setCartItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [categories, setCategories] = useState<string[]>([])
+  const [selectedImage, setSelectedImage] = useState(0)
+  const [quantity, setQuantity] = useState(1)
 
   useEffect(() => {
-    // Load services from database
-    const fetchServices = async () => {
-      try {
-        const response = await fetch("/api/services?limit=1000") // Get all services
-        if (response.ok) {
-          const result = await response.json()
-          
-          // Handle both API response formats
-          let servicesArray: Service[] = []
-          
-          if (result.success && Array.isArray(result.data)) {
-            // New format: { success: true, data: [...], pagination: {...} }
-            servicesArray = result.data
-          } else if (Array.isArray(result)) {
-            // Old format: [...]
-            servicesArray = result
+    const fetchService = async () => {
+      if (categoryParam) {
+        // If category parameter exists, fetch services for that category
+        try {
+          const response = await fetch(`/api/services?category=${encodeURIComponent(categoryParam)}`)
+          if (response.ok) {
+            const result = await response.json()
+            if (result.success) {
+              setServices(result.data)
+              // Set the first service as the main service if available
+              if (result.data.length > 0) {
+                setService(result.data[0])
+              }
+            }
           }
-          
-          setServices(servicesArray)
-          
-          // Extract unique categories
-          const uniqueCategories = Array.from(new Set(servicesArray.map((s: Service) => {
-            // Get the main category (before the first >)
-            return s.category?.split('>')[0]?.trim() || 'Uncategorized'
-          })))
-          setCategories(uniqueCategories as string[])
-        } else {
-          setServices([])
+        } catch (error) {
+          console.error("Error fetching services:", error)
+        } finally {
+          setLoading(false)
         }
-      } catch (error) {
-        console.error("Error fetching services:", error)
-        setServices([])
-      } finally {
+      } else if (!serviceId) {
+        // Show dummy data if no service ID
+        setService({
+          _id: "dummy-service-1",
+          name: "Premium Office Cleaning Service",
+          price: 2500,
+          description: "Professional office cleaning service designed to keep your workspace spotless and hygienic. Our experienced team uses eco-friendly products and modern equipment to ensure thorough cleaning of all office areas including desks, floors, restrooms, and common areas. Perfect for maintaining a professional and healthy work environment.",
+          images: [
+            "https://images.unsplash.com/photo-1581578731548-c6a0c3f2fcc0?w=800",
+            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
+            "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800"
+          ],
+          category: "Cleaning & Maintenance > Office Cleaning",
+          subCategory: "Office Cleaning",
+          level2Category: "Premium Cleaning",
+          duration: "2-3 hours",
+          location: "Mumbai & Surrounding Areas"
+        })
         setLoading(false)
+        return
+      } else {
+        // Fetch specific service by ID
+        try {
+          const response = await fetch(`/api/services/${serviceId}`)
+          if (response.ok) {
+            const result = await response.json()
+            if (result.success && result.data) {
+              setService(result.data)
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching service:", error)
+        } finally {
+          setLoading(false)
+        }
       }
     }
 
-    fetchServices()
+    fetchService()
+  }, [serviceId, categoryParam])
 
-    // Load cart items from localStorage
-    const savedCart = localStorage.getItem("cart")
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart))
-      } catch (error) {
-        console.error("Error parsing cart data:", error)
-        setCartItems([])
-      }
-    }
-  }, [])
-
-  const addToCart = (service: Service) => {
-    const existingItem = cartItems.find(item => item.id === service._id)
+  const handlePlaceEnquiry = () => {
+    if (!service) return
     
-    if (existingItem) {
-      // Update quantity
-      const updatedItems = cartItems.map(item =>
-        item.id === service._id 
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      )
-      setCartItems(updatedItems)
-      localStorage.setItem("cart", JSON.stringify(updatedItems))
-    } else {
-      // Add new item
-      const newItems = [...cartItems, { 
-        id: service._id,
-        name: service.name,
-        price: service.price,
-        image: service.images?.[0],
-        category: service.category,
-        quantity: 1 
-      }]
-      setCartItems(newItems)
-      localStorage.setItem("cart", JSON.stringify(newItems))
-    }
-
-    // Show success message
-    alert(`${service.name} added to cart!`)
+    // Create enquiry message
+    const enquiryMessage = `Hi! I'm interested in your "${service.name}" service. Please provide more details and pricing information.`
+    
+    // You can replace this with actual enquiry handling
+    alert(`Enquiry placed for: ${service.name}\n\nWe'll contact you soon with more details!`)
+    
+    // Optional: Redirect to contact page or enquiry form
+    // router.push('/contact')
   }
-
-  const getCartQuantity = (serviceId: string) => {
-    const item = cartItems.find(item => item.id === serviceId)
-    return item ? item.quantity : 0
-  }
-
-  // Filter services - ensure services is always an array
-  const filteredServices = Array.isArray(services) ? services.filter((service) => {
-    const matchesSearch = service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || 
-                           service.category?.split('>')[0]?.trim() === selectedCategory
-    return matchesSearch && matchesCategory
-  }) : []
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="container mx-auto px-4">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading services...</p>
-          </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading service details...</p>
         </div>
       </div>
     )
   }
 
+  if (!service) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <Package className="h-24 w-24 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Service Not Found</h2>
+          <p className="text-gray-600 mb-6">The service you're looking for doesn't exist.</p>
+          <Link href="/">
+            <Button className="bg-blue-600 hover:bg-blue-700">Back to Home</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const images = service.images && service.images.length > 0 ? service.images : []
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Our Services</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Discover our comprehensive range of business services to support your company's growth and operations.
-          </p>
+    <div className="min-h-screen">
+      <Header />
+      
+      {/* Breadcrumb */}
+      <div className="border-b bg-gray-50">
+        <div className="container mx-auto px-6 py-3 max-w-7xl">
+          <nav className="flex items-center space-x-2 text-sm text-gray-600">
+            <Link href="/" className="hover:text-blue-600">Home</Link>
+            <span>/</span>
+            <Link href="/allcategories" className="hover:text-blue-600">Services</Link>
+            <span>/</span>
+            <span className="text-gray-900">{service.name}</span>
+          </nav>
         </div>
+      </div>
 
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <Input
-              placeholder="Search services..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-64">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Main Content */}
+      <div className="container mx-auto px-6 py-12 max-w-7xl">
+        <div className="grid lg:grid-cols-2 gap-16">
+          {/* Left - Image Gallery */}
+          <div>
+            {/* Main Image */}
+            <div className="relative bg-gray-50 rounded-lg overflow-hidden mb-4 group">
+              <div className="aspect-square relative">
+                {images.length > 0 ? (
+                  <Image
+                    src={images[selectedImage]}
+                    alt={service.name}
+                    fill
+                    className="object-contain p-8"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ShoppingCart className="h-24 w-24 text-gray-300" />
+                  </div>
+                )}
 
-        {filteredServices.length === 0 ? (
-          /* Empty State */
-          <div className="text-center py-16">
-            <Package className="h-24 w-24 text-gray-300 mx-auto mb-6" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">No services found</h2>
-            <p className="text-gray-600 mb-8">
-              {services.length === 0 
-                ? "No services available yet. Check back soon!" 
-                : "Try adjusting your search or filters."}
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Services Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredServices.map((service) => (
-                <Card key={service._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <CardHeader className="p-0">
-                    <div className="w-full h-48 bg-gray-100 flex items-center justify-center">
-                      {service.images && service.images.length > 0 ? (
-                        <Image
-                          src={service.images[0]}
-                          alt={service.name}
-                          width={300}
-                          height={200}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <ShoppingCart className="h-16 w-16 text-gray-400" />
-                      )}
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="secondary">{service.category?.split('>')[0]?.trim()}</Badge>
-                      <span className="text-2xl font-bold text-blue-600">
-                        ₹{service.price.toLocaleString()}
-                      </span>
-                    </div>
-                    
-                    <CardTitle className="text-xl mb-3">{service.name}</CardTitle>
-                    
-                    <p className="text-gray-600 mb-4 line-clamp-2">
-                      {service.description}
-                    </p>
+                {/* Navigation Arrows */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-gray-700" />
+                    </button>
+                    <button
+                      onClick={() => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ChevronRight className="h-5 w-5 text-gray-700" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
 
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm text-gray-500">
-                        Stock: <span className={service.stock > 10 ? "text-green-600" : "text-orange-600"}>
-                          {service.stock} units
-                        </span>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      {getCartQuantity(service._id) > 0 && (
-                        <span className="text-sm text-green-600 font-medium">
-                          In cart: {getCartQuantity(service._id)}
-                        </span>
-                      )}
-                      
-                      <Button
-                        onClick={() => addToCart(service)}
-                        disabled={service.stock === 0}
-                        className="bg-blue-600 hover:bg-blue-700 flex items-center space-x-2 disabled:bg-gray-400"
+            {/* Thumbnails */}
+            {images.length > 1 && (
+              <div className="mt-8">
+                <div className="flex gap-6 justify-start items-center">
+                  {images.map((img, index) => (
+                    <div
+                      key={index}
+                      className="flex-shrink-0"
+                    >
+                      <button
+                        onClick={() => setSelectedImage(index)}
+                        className={`block w-24 h-24 rounded-lg border-2 transition-all duration-300 overflow-hidden ${
+                          selectedImage === index 
+                            ? 'border-blue-600 ring-2 ring-blue-200 shadow-lg' 
+                            : 'border-gray-200 hover:border-gray-400 hover:shadow-md'
+                        }`}
                       >
-                        <Plus className="h-4 w-4" />
-                        <span>{service.stock === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
-                      </Button>
+                        <div className="w-full h-full relative">
+                          <Image
+                            src={img}
+                            alt={`Service view ${index + 1}`}
+                            fill
+                            className="object-cover"
+                            sizes="96px"
+                          />
+                        </div>
+                      </button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-3 text-center">Click to view different angles</p>
+              </div>
+            )}
+          </div>
+
+          {/* Right - Service Info */}
+          <div>
+            {/* Category */}
+            <p className="text-sm text-gray-600 mb-2">{service.category?.split('>')[0]?.trim()}</p>
+
+            {/* Service Name */}
+            <h1 className="text-3xl font-semibold text-gray-900 mb-4 leading-tight">
+              {service.name}
+            </h1>
+
+            {/* Rating */}
+            <div className="flex items-center gap-3 mb-6 pb-6 border-b">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star key={star} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <span className="text-sm text-gray-600">4.9 (87 reviews)</span>
             </div>
 
-            {/* Results count */}
-            <div className="mt-8 text-center text-gray-600">
-              Showing {filteredServices.length} of {services.length} services
-            </div>
-          </>
-        )}
-
-        {/* Cart Summary */}
-        {cartItems.length > 0 && (
-          <div className="mt-12 text-center">
-            <div className="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
-              <h3 className="text-lg font-semibold mb-2">Cart Summary</h3>
-              <p className="text-gray-600 mb-4">
-                {cartItems.reduce((total, item) => total + item.quantity, 0)} items in your cart
-              </p>
-              <Button 
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => window.location.href = '/cart'}
+            {/* Action Button - Moved Higher */}
+            <div className="mb-8">
+              <Button
+                onClick={handlePlaceEnquiry}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold"
               >
-                View Cart
+                <MessageCircle className="h-5 w-5 mr-2" />
+                Place Enquiry
               </Button>
             </div>
+
+            {/* Service Details */}
+            <div className="mb-6 space-y-4">
+              {service.duration && (
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Duration</p>
+                    <p className="text-sm text-gray-600">{service.duration}</p>
+                  </div>
+                </div>
+              )}
+              {service.location && (
+                <div className="flex items-center gap-3">
+                  <Truck className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Service Area</p>
+                    <p className="text-sm text-gray-600">{service.location}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">About this service</h2>
+              <p className="text-gray-700 leading-relaxed">
+                {service.description}
+              </p>
+            </div>
+
+            {/* Features */}
+            <div className="mb-8 pb-8 border-b">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Service Features</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <Truck className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Fast Service</p>
+                    <p className="text-xs text-gray-600">Quick turnaround</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Insured & Bonded</p>
+                    <p className="text-xs text-gray-600">Fully protected</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Star className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Expert Team</p>
+                    <p className="text-xs text-gray-600">Professional staff</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">24/7 Support</p>
+                    <p className="text-xs text-gray-600">Always available</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            {/* Contact Info */}
+            <div className="mt-8 bg-gray-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Get in Touch</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-blue-600" />
+                  <span className="text-sm text-gray-700">+91 98765 43210</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-blue-600" />
+                  <span className="text-sm text-gray-700">services@adminza.in</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  <span className="text-sm text-gray-700">Mon - Fri: 9:00 AM - 6:00 PM</span>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
+      
+      <Footer />
     </div>
   )
 }

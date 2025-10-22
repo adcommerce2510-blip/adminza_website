@@ -1,6 +1,6 @@
 import { Header } from "@/components/header"
 import { BannerSlider } from "@/components/banner-slider"
-import { CategoriesSection } from "@/components/categories-section"
+import { DynamicCategoriesSection } from "@/components/dynamic-categories-section"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -29,7 +29,7 @@ export default function HomePage() {
         <BannerSlider />
 
         {/* Categories Section */}
-        <CategoriesSection />
+        <DynamicCategoriesSection />
 
         {/* Why Choose Us Section */}
         <section className="pt-2 pb-20 bg-muted/30">

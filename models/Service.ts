@@ -3,6 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose'
 export interface IService extends Document {
   name: string
   category: string
+  subcategory?: string
+  level2Category?: string
   price: number
   duration: string
   description: string
@@ -28,6 +30,14 @@ const ServiceSchema: Schema = new Schema({
   category: {
     type: String,
     required: [true, 'Category is required'],
+    trim: true
+  },
+  subcategory: {
+    type: String,
+    trim: true
+  },
+  level2Category: {
+    type: String,
     trim: true
   },
   price: {
