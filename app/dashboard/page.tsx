@@ -1,10 +1,11 @@
 import { DashboardPage } from "@/components/dashboard-page"
+import { DashboardAuth } from "@/components/dashboard-auth"
 
 export default function Dashboard() {
   return (
-    <div className="min-h-screen bg-background">
+    <DashboardAuth>
       <DashboardPage />
-    </div>
+    </DashboardAuth>
   )
 }
 
