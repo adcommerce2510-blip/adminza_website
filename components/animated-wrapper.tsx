@@ -1,7 +1,6 @@
 "use client"
 
 import { ReactNode } from 'react'
-import { useScrollAnimation } from '@/hooks/use-scroll-animation'
 
 interface AnimatedWrapperProps {
   children: ReactNode
@@ -16,38 +15,9 @@ export function AnimatedWrapper({
   delay = 0,
   className = '' 
 }: AnimatedWrapperProps) {
-  const { ref, isInView } = useScrollAnimation()
-
-  // Reset animation classes when not in view
-  const getAnimationClass = () => {
-    if (!isInView) {
-      switch (animation) {
-        case 'fade-in-up':
-          return 'opacity-0 translate-y-8'
-        case 'fade-in-down':
-          return 'opacity-0 -translate-y-8'
-        case 'fade-in-left':
-          return 'opacity-0 -translate-x-8'
-        case 'fade-in-right':
-          return 'opacity-0 translate-x-8'
-        case 'scale-in':
-          return 'opacity-0 scale-95'
-        case 'slide-in-up':
-          return 'opacity-0 translate-y-12'
-        case 'slide-in-down':
-          return 'opacity-0 -translate-y-12'
-        case 'fade-in':
-        default:
-          return 'opacity-0'
-      }
-    }
-    return animation
-  }
-
   return (
     <div 
-      ref={ref} 
-      className={`transition-all duration-800 ease-out ${getAnimationClass()} ${className}`}
+      className={`transition-all duration-800 ease-out ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       {children}
@@ -66,19 +36,15 @@ export function StaggeredContainer({
   className = '',
   staggerDelay = 100 
 }: StaggeredContainerProps) {
-  const { ref, isInView } = useScrollAnimation()
-
   // Ensure children is always an array
   const childrenArray = Array.isArray(children) ? children : [children]
 
   return (
-    <div ref={ref} className={className}>
+    <div className={className}>
       {childrenArray.map((child, index) => (
         <div
           key={index}
-          className={`transition-all duration-800 ease-out ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}
+          className="transition-all duration-800 ease-out"
           style={{ animationDelay: `${index * staggerDelay}ms` }}
         >
           {child}

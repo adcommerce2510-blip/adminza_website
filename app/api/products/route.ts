@@ -13,29 +13,49 @@ export async function GET(request: NextRequest) {
 
     let query: any = {}
 
-    // Build hierarchical category query
+    // Build hierarchical category query with flexible matching
     if (subSubcategory && subcategory && category) {
       // Level 2 category - most specific
+      const categoryPath = `${category}/${subcategory}/${subSubcategory}`
+      const categoryPathWithSpaces = `${category.replace(/-/g, ' ')}/${subcategory.replace(/-/g, ' ')}/${subSubcategory.replace(/-/g, ' ')}`
+      
       query = {
         $or: [
-          { category: `${category}/${subcategory}/${subSubcategory}` },
+          { category: categoryPath },
+          { category: categoryPathWithSpaces },
+          { category: { $regex: categoryPath, $options: 'i' } },
+          { category: { $regex: categoryPathWithSpaces, $options: 'i' } },
+          // Handle URL slug format directly
+          { category: { $regex: categoryPathWithSpaces.replace(/&/g, '&'), $options: 'i' } },
           { level2Category: subSubcategory, subcategory: subcategory, category: category }
         ]
       }
     } else if (subcategory && category) {
-      // Subcategory level
+      // Subcategory level - flexible matching
+      const categoryPath = `${category}/${subcategory}`
+      const categoryPathWithSpaces = `${category.replace(/-/g, ' ')}/${subcategory.replace(/-/g, ' ')}`
+      
       query = {
         $or: [
-          { category: `${category}/${subcategory}` },
+          { category: categoryPath },
+          { category: categoryPathWithSpaces },
+          { category: { $regex: categoryPath, $options: 'i' } },
+          { category: { $regex: categoryPathWithSpaces, $options: 'i' } },
+          // Handle URL slug format directly - convert hyphens to spaces and handle &
+          { category: { $regex: categoryPathWithSpaces.replace(/&/g, '&'), $options: 'i' } },
           { subcategory: subcategory, category: category }
         ]
       }
     } else if (category) {
-      // Main category level
+      // Main category level - flexible matching
+      const categoryWithSpaces = category.replace(/-/g, ' ')
+      
       query = {
         $or: [
+          { category: category },
+          { category: categoryWithSpaces },
           { category: { $regex: `^${category}`, $options: 'i' } },
-          { category: category }
+          { category: { $regex: `^${categoryWithSpaces}`, $options: 'i' } }
         ]
       }
     }

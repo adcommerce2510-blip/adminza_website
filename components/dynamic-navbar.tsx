@@ -23,31 +23,45 @@ export function DynamicNavbar() {
     const fetchCategories = async () => {
       try {
         console.log("Fetching navbar categories...")
-        const response = await fetch('/api/categories/navbar')
+        const response = await fetch('/api/categories/navbar', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-cache'
+        })
         console.log("Response status:", response.status)
+        console.log("Response headers:", Object.fromEntries(response.headers.entries()))
         
         if (response.ok) {
           const result = await response.json()
           console.log("API result:", result)
           
-          if (result.success) {
+          if (result.success && result.data) {
             console.log("Categories loaded:", result.data.length)
-            console.log("Categories in order:", result.data.map(c => c.title))
+            console.log("Categories in order:", result.data.map((c: any) => c.title))
             setCategories(result.data)
           } else {
             console.error("API returned error:", result.error)
+            console.error("API result details:", result)
           }
         } else {
+          const errorText = await response.text()
           console.error("Failed to fetch categories, status:", response.status)
+          console.error("Error response:", errorText)
         }
       } catch (error) {
         console.error("Error fetching navbar categories:", error)
+        console.error("Error details:", error instanceof Error ? error.message : 'Unknown error')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchCategories()
+    // Add a small delay to ensure the server is ready
+    const timeoutId = setTimeout(fetchCategories, 100)
+    
+    return () => clearTimeout(timeoutId)
   }, [])
 
   if (loading) {

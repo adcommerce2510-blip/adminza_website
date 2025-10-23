@@ -1,13 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, Star, Truck, Shield, Clock, Package, ChevronLeft, ChevronRight, Check, Minus, Plus, MessageCircle, Phone, Mail } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MessageCircle, Star, Search, Filter, Grid, List, Clock, MapPin } from "lucide-react"
 import Image from "next/image"
-import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
 interface Service {
@@ -21,122 +24,104 @@ interface Service {
   level2Category?: string
   duration?: string
   location?: string
+  vendor: string
+  status: string
 }
 
-export default function ServiceDetailPage() {
-  const router = useRouter()
+export default function AllServicesPage() {
   const searchParams = useSearchParams()
-  const serviceId = searchParams.get('id')
   const categoryParam = searchParams.get('category')
+  const subcategoryParam = searchParams.get('subcategory')
+  const subSubcategoryParam = searchParams.get('subSubcategory')
   
-  const [service, setService] = useState<Service | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [quantity, setQuantity] = useState(1)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [sortBy, setSortBy] = useState("name")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   useEffect(() => {
-    const fetchService = async () => {
-      if (categoryParam) {
-        // If category parameter exists, fetch services for that category
-        try {
-          const response = await fetch(`/api/services?category=${encodeURIComponent(categoryParam)}`)
-          if (response.ok) {
-            const result = await response.json()
-            if (result.success) {
-              setServices(result.data)
-              // Set the first service as the main service if available
-              if (result.data.length > 0) {
-                setService(result.data[0])
-              }
+    const fetchServices = async () => {
+      try {
+        let url = '/api/services'
+        const params = new URLSearchParams()
+        
+        if (categoryParam) {
+          params.append('category', categoryParam)
+        }
+        if (subcategoryParam) {
+          params.append('subcategory', subcategoryParam)
+        }
+        if (subSubcategoryParam) {
+          params.append('subSubcategory', subSubcategoryParam)
+        }
+        
+        if (params.toString()) {
+          url += `?${params.toString()}`
+        }
+        
+        const response = await fetch(url)
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success) {
+            setServices(result.data)
+            // If we have a category parameter, set it as the selected category
+            if (categoryParam) {
+              setSelectedCategory(categoryParam)
             }
           }
-        } catch (error) {
-          console.error("Error fetching services:", error)
-        } finally {
-          setLoading(false)
         }
-      } else if (!serviceId) {
-        // Show dummy data if no service ID
-        setService({
-          _id: "dummy-service-1",
-          name: "Premium Office Cleaning Service",
-          price: 2500,
-          description: "Professional office cleaning service designed to keep your workspace spotless and hygienic. Our experienced team uses eco-friendly products and modern equipment to ensure thorough cleaning of all office areas including desks, floors, restrooms, and common areas. Perfect for maintaining a professional and healthy work environment.",
-          images: [
-            "https://images.unsplash.com/photo-1581578731548-c6a0c3f2fcc0?w=800",
-            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
-            "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800"
-          ],
-          category: "Cleaning & Maintenance > Office Cleaning",
-          subCategory: "Office Cleaning",
-          level2Category: "Premium Cleaning",
-          duration: "2-3 hours",
-          location: "Mumbai & Surrounding Areas"
-        })
+      } catch (error) {
+        console.error("Error fetching services:", error)
+      } finally {
         setLoading(false)
-        return
-      } else {
-        // Fetch specific service by ID
-        try {
-          const response = await fetch(`/api/services/${serviceId}`)
-          if (response.ok) {
-            const result = await response.json()
-            if (result.success && result.data) {
-              setService(result.data)
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching service:", error)
-        } finally {
-          setLoading(false)
-        }
       }
     }
 
-    fetchService()
-  }, [serviceId, categoryParam])
+    fetchServices()
+  }, [categoryParam, subcategoryParam, subSubcategoryParam])
 
-  const handlePlaceEnquiry = () => {
-    if (!service) return
-    
-    // Create enquiry message
+  const handlePlaceEnquiry = (service: Service) => {
     const enquiryMessage = `Hi! I'm interested in your "${service.name}" service. Please provide more details and pricing information.`
-    
-    // You can replace this with actual enquiry handling
     alert(`Enquiry placed for: ${service.name}\n\nWe'll contact you soon with more details!`)
-    
-    // Optional: Redirect to contact page or enquiry form
-    // router.push('/contact')
   }
+
+  const filteredServices = services.filter(service => {
+    const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         service.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         service.category.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesCategory = selectedCategory === "all" || !selectedCategory || service.category.includes(selectedCategory)
+    
+    return matchesSearch && matchesCategory
+  })
+
+  const sortedServices = [...filteredServices].sort((a, b) => {
+    switch (sortBy) {
+      case "price-low":
+        return a.price - b.price
+      case "price-high":
+        return b.price - a.price
+      case "name":
+        return a.name.localeCompare(b.name)
+      default:
+        return 0
+    }
+  })
+
+  const categories = Array.from(new Set(services.map(s => s.category.split('>')[0]?.trim()).filter(Boolean)))
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading service details...</p>
+          <p className="mt-4 text-gray-600">Loading services...</p>
         </div>
       </div>
     )
   }
-
-  if (!service) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <Package className="h-24 w-24 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Service Not Found</h2>
-          <p className="text-gray-600 mb-6">The service you're looking for doesn't exist.</p>
-          <Link href="/">
-            <Button className="bg-blue-600 hover:bg-blue-700">Back to Home</Button>
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  const images = service.images && service.images.length > 0 ? service.images : []
 
   return (
     <div className="min-h-screen">
@@ -148,206 +133,178 @@ export default function ServiceDetailPage() {
           <nav className="flex items-center space-x-2 text-sm text-gray-600">
             <Link href="/" className="hover:text-blue-600">Home</Link>
             <span>/</span>
-            <Link href="/allcategories" className="hover:text-blue-600">Services</Link>
-            <span>/</span>
-            <span className="text-gray-900">{service.name}</span>
+            <span className="text-gray-900">
+              {categoryParam ? `${categoryParam} Services` : 'All Services'}
+            </span>
           </nav>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-12 max-w-7xl">
-        <div className="grid lg:grid-cols-2 gap-16">
-          {/* Left - Image Gallery */}
-          <div>
-            {/* Main Image */}
-            <div className="relative bg-gray-50 rounded-lg overflow-hidden mb-4 group">
-              <div className="aspect-square relative">
-                {images.length > 0 ? (
-                  <Image
-                    src={images[selectedImage]}
-                    alt={service.name}
-                    fill
-                    className="object-contain p-8"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <ShoppingCart className="h-24 w-24 text-gray-300" />
-                  </div>
-                )}
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {categoryParam ? `${categoryParam} Services` : 'All Services'}
+          </h1>
+          <p className="text-gray-600">
+            {categoryParam 
+              ? `Discover all services in the ${categoryParam} category`
+              : 'Discover our complete range of professional services'
+            }
+          </p>
+        </div>
 
-                {/* Navigation Arrows */}
-                {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <ChevronLeft className="h-5 w-5 text-gray-700" />
-                    </button>
-                    <button
-                      onClick={() => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <ChevronRight className="h-5 w-5 text-gray-700" />
-                    </button>
-                  </>
-                )}
+        {/* Filters and Search */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search services..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </div>
 
-            {/* Thumbnails */}
-            {images.length > 1 && (
-              <div className="mt-8">
-                <div className="flex gap-6 justify-start items-center">
-                  {images.map((img, index) => (
-                    <div
-                      key={index}
-                      className="flex-shrink-0"
-                    >
-                      <button
-                        onClick={() => setSelectedImage(index)}
-                        className={`block w-24 h-24 rounded-lg border-2 transition-all duration-300 overflow-hidden ${
-                          selectedImage === index 
-                            ? 'border-blue-600 ring-2 ring-blue-200 shadow-lg' 
-                            : 'border-gray-200 hover:border-gray-400 hover:shadow-md'
-                        }`}
-                      >
-                        <div className="w-full h-full relative">
-                          <Image
-                            src={img}
-                            alt={`Service view ${index + 1}`}
-                            fill
-                            className="object-cover"
-                            sizes="96px"
-                          />
-                        </div>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-3 text-center">Click to view different angles</p>
-              </div>
-            )}
+            {/* Category Filter */}
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name A-Z</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* View Mode */}
+            <div className="flex border rounded-md">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2 ${viewMode === "grid" ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+              >
+                <Grid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 ${viewMode === "list" ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
-          {/* Right - Service Info */}
-          <div>
-            {/* Category */}
-            <p className="text-sm text-gray-600 mb-2">{service.category?.split('>')[0]?.trim()}</p>
-
-            {/* Service Name */}
-            <h1 className="text-3xl font-semibold text-gray-900 mb-4 leading-tight">
-              {service.name}
-            </h1>
-
-            {/* Rating */}
-            <div className="flex items-center gap-3 mb-6 pb-6 border-b">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star key={star} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <span className="text-sm text-gray-600">4.9 (87 reviews)</span>
-            </div>
-
-            {/* Action Button - Moved Higher */}
-            <div className="mb-8">
-              <Button
-                onClick={handlePlaceEnquiry}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold"
-              >
-                <MessageCircle className="h-5 w-5 mr-2" />
-                Place Enquiry
-              </Button>
-            </div>
-
-            {/* Service Details */}
-            <div className="mb-6 space-y-4">
-              {service.duration && (
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Duration</p>
-                    <p className="text-sm text-gray-600">{service.duration}</p>
-                  </div>
-                </div>
-              )}
-              {service.location && (
-                <div className="flex items-center gap-3">
-                  <Truck className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Service Area</p>
-                    <p className="text-sm text-gray-600">{service.location}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Description */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">About this service</h2>
-              <p className="text-gray-700 leading-relaxed">
-                {service.description}
-              </p>
-            </div>
-
-            {/* Features */}
-            <div className="mb-8 pb-8 border-b">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Service Features</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <Truck className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Fast Service</p>
-                    <p className="text-xs text-gray-600">Quick turnaround</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Insured & Bonded</p>
-                    <p className="text-xs text-gray-600">Fully protected</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Star className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Expert Team</p>
-                    <p className="text-xs text-gray-600">Professional staff</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">24/7 Support</p>
-                    <p className="text-xs text-gray-600">Always available</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
-            {/* Contact Info */}
-            <div className="mt-8 bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Get in Touch</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-blue-600" />
-                  <span className="text-sm text-gray-700">+91 98765 43210</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-blue-600" />
-                  <span className="text-sm text-gray-700">services@adminza.in</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  <span className="text-sm text-gray-700">Mon - Fri: 9:00 AM - 6:00 PM</span>
-                </div>
-              </div>
-            </div>
+          {/* Results Count */}
+          <div className="text-sm text-gray-600">
+            Showing {sortedServices.length} of {services.length} services
           </div>
         </div>
+
+        {/* Services Grid/List */}
+        {sortedServices.length === 0 ? (
+          <div className="text-center py-12">
+            <MessageCircle className="h-24 w-24 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No services found</h3>
+            <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+          </div>
+        ) : (
+          <div className={viewMode === "grid" 
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" 
+            : "space-y-4"
+          }>
+            {sortedServices.map((service) => (
+              <Card key={service._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <Link href={`/service/${service._id}`}>
+                  <CardContent className="p-0">
+                    {/* Image */}
+                    <div className="aspect-square bg-gray-100 overflow-hidden relative">
+                      {service.images && service.images.length > 0 ? (
+                        <Image
+                          src={service.images[0]}
+                          alt={service.name}
+                          fill
+                          className="object-contain p-4 hover:scale-105 transition-transform duration-300"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <MessageCircle className="h-16 w-16 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                        {service.name}
+                      </h3>
+                      
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {service.description}
+                      </p>
+
+                      {/* Service Details */}
+                      <div className="space-y-2 mb-3">
+                        {service.duration && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {service.duration}
+                          </div>
+                        )}
+                        {service.location && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {service.location}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm text-gray-600 ml-1">4.9</span>
+                        </div>
+                        <span className="text-lg font-bold text-blue-600">
+                          ₹{service.price.toLocaleString()}
+                        </span>
+                      </div>
+
+                      <Button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handlePlaceEnquiry(service)
+                        }}
+                        className="w-full"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Place Enquiry
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Link>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
       
       <Footer />

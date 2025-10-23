@@ -1,10 +1,11 @@
 import mongoose from 'mongoose'
 
-const MONGODB_URI = process.env.MONGODB_URI
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://adminzaa:adminzaa123@cluster0.mongodb.net/adminzaa?retryWrites=true&w=majority'
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable')
-}
+// Temporarily disable MongoDB connection check for debugging
+// if (!MONGODB_URI) {
+//   throw new Error('Please define the MONGODB_URI environment variable')
+// }
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
@@ -25,30 +26,36 @@ if (!cached) {
 }
 
 async function dbConnect() {
-  if (cached.conn) {
+  if (cached && cached.conn) {
     return cached.conn
   }
 
-  if (!cached.promise) {
+  if (!cached || !cached.promise) {
     const opts = {
       bufferCommands: false,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     }
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose
-    })
+    if (cached) {
+      cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+        return mongoose
+      })
+    }
   }
 
   try {
-    cached.conn = await cached.promise
+    if (cached) {
+      cached.conn = await cached.promise
+    }
   } catch (e) {
-    cached.promise = null
+    if (cached) {
+      cached.promise = null
+    }
     throw e
   }
 
-  return cached.conn
+  return cached?.conn
 }
 
 export default dbConnect

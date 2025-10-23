@@ -51,10 +51,11 @@ export default function CategoryPage() {
       try {
         setLoading(true)
         
-        // Parse the slug array to get category path
-        const category = slug[0]
-        const subcategory = slug[1] || null
-        const subSubcategory = slug[2] || null
+        // Parse the slug array to get category path and convert back to original names
+        // Handle special characters like & that get encoded in URLs
+        const category = slug[0]?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+        const subcategory = slug[1]?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/&/g, '&') || null
+        const subSubcategory = slug[2]?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/&/g, '&') || null
         
         // Build API URL based on the deepest level
         let productsUrl = `/api/products`
@@ -62,8 +63,8 @@ export default function CategoryPage() {
         
         if (subSubcategory) {
           // Level 2 category - filter by subSubcategory
-          productsUrl += `?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}&subSubcategory=${encodeURIComponent(subSubcategory)}`
-          servicesUrl += `?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}&subSubcategory=${encodeURIComponent(subSubcategory)}`
+          productsUrl += `?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory || '')}&subSubcategory=${encodeURIComponent(subSubcategory || '')}`
+          servicesUrl += `?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory || '')}&subSubcategory=${encodeURIComponent(subSubcategory || '')}`
         } else if (subcategory) {
           // Sub category - filter by subcategory (include main category for proper filtering)
           productsUrl += `?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`
@@ -75,8 +76,6 @@ export default function CategoryPage() {
         }
         
         // Fetch products and services for this category
-        console.log("Fetching from URLs:", productsUrl, servicesUrl)
-        
         const [productsRes, servicesRes] = await Promise.all([
           fetch(productsUrl),
           fetch(servicesUrl)
@@ -87,18 +86,12 @@ export default function CategoryPage() {
 
         if (productsRes.ok) {
           const productsResult = await productsRes.json()
-          console.log("Products API result:", productsResult)
           productsData = productsResult.success ? productsResult.data : []
-        } else {
-          console.error("Products API error:", productsRes.status, productsRes.statusText)
         }
 
         if (servicesRes.ok) {
           const servicesResult = await servicesRes.json()
-          console.log("Services API result:", servicesResult)
           servicesData = servicesResult.success ? servicesResult.data : []
-        } else {
-          console.error("Services API error:", servicesRes.status, servicesRes.statusText)
         }
 
         setProducts(productsData)
@@ -246,33 +239,25 @@ export default function CategoryPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredItems.map((item) => {
               const isProduct = products.some(p => p._id === item._id)
-              const detailUrl = isProduct ? `/products?id=${item._id}` : `/services?id=${item._id}`
+              const detailUrl = isProduct ? `/product/${item._id}` : `/service/${item._id}`
               
               return (
-                <Card key={item._id} className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col relative z-0">
-                  <Link href={detailUrl} className="flex flex-col h-full">
-                    <CardContent className="p-0 flex flex-col h-full relative z-0">
+                <Card key={item._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <Link href={detailUrl}>
+                    <CardContent className="p-0">
                       {/* Image */}
-                      <div className="w-full h-48 bg-gray-100 overflow-hidden relative flex-shrink-0 border border-gray-200" style={{ contain: 'layout style paint' }}>
+                      <div className="aspect-square bg-gray-100 overflow-hidden relative">
                         {item.images && item.images.length > 0 ? (
-                          <div className="w-full h-full relative overflow-hidden" style={{ contain: 'layout style paint' }}>
-                            <Image
-                              src={item.images[0]}
-                              alt={item.name}
-                              width={300}
-                              height={192}
-                              className="w-full h-full object-cover object-center"
-                              style={{ 
-                                maxWidth: '100%', 
-                                maxHeight: '100%',
-                                objectFit: 'cover',
-                                display: 'block'
-                              }}
-                            />
-                          </div>
+                          <Image
+                            src={item.images[0]}
+                            alt={item.name}
+                            fill
+                            className="object-contain p-4 hover:scale-105 transition-transform duration-300"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <ShoppingCart className="h-16 w-16 text-gray-400" />
@@ -281,53 +266,38 @@ export default function CategoryPage() {
                       </div>
 
                       {/* Content */}
-                      <div className="p-6 flex-1 flex flex-col">
-                        <div className="flex items-center justify-between mb-3">
-                          <Badge variant={isProduct ? "default" : "secondary"}>
-                            {isProduct ? "Product" : "Service"}
-                          </Badge>
-                          <div className="flex items-center text-yellow-500">
-                            <Star className="h-4 w-4 fill-current" />
-                            <span className="ml-1 text-sm text-gray-600">4.5</span>
-                            <span className="ml-1 text-xs text-gray-500">(150)</span>
-                          </div>
-                        </div>
-
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                      <div className="p-4">
+                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
                           {item.name}
                         </h3>
-
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                        
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                           {item.description}
                         </p>
 
-                        {/* Service specific info */}
-                        {!isProduct && (
-                          <div className="flex items-center text-sm text-gray-500 mb-3">
-                            {item.duration && (
-                              <div className="flex items-center mr-4">
-                                <Clock className="h-4 w-4 mr-1" />
-                                {item.duration}
-                              </div>
-                            )}
-                            {item.location && (
-                              <div className="flex items-center">
-                                <MapPin className="h-4 w-4 mr-1" />
-                                {item.location}
-                              </div>
-                            )}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm text-gray-600 ml-1">4.8</span>
                           </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
                           <span className="text-lg font-bold text-blue-600">
                             ₹{item.price.toLocaleString()}
                           </span>
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-                            <ShoppingCart className="h-4 w-4 mr-1" />
-                            {isProduct ? "Add to Cart" : "Place Enquiry"}
-                          </Button>
                         </div>
+
+                        <Button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            if (isProduct) {
+                              alert(`${item.name} added to cart!`)
+                            } else {
+                              alert(`Enquiry placed for: ${item.name}`)
+                            }
+                          }}
+                          className="w-full"
+                        >
+                          {isProduct ? "Add to Cart" : "Place Enquiry"}
+                        </Button>
                       </div>
                     </CardContent>
                   </Link>

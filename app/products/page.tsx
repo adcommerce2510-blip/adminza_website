@@ -1,13 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, Star, Truck, Shield, Clock, Package, ChevronLeft, ChevronRight, Check, Minus, Plus } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ShoppingCart, Star, Search, Filter, Grid, List } from "lucide-react"
 import Image from "next/image"
-import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
 interface Product {
@@ -20,19 +23,22 @@ interface Product {
   subCategory?: string
   level2Category?: string
   stock: number
+  vendor: string
+  status: string
 }
 
-export default function ProductDetailPage() {
-  const router = useRouter()
+export default function AllProductsPage() {
   const searchParams = useSearchParams()
-  const productId = searchParams.get('id')
   const categoryParam = searchParams.get('category')
+  const subcategoryParam = searchParams.get('subcategory')
+  const subSubcategoryParam = searchParams.get('subSubcategory')
   
-  const [product, setProduct] = useState<Product | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [quantity, setQuantity] = useState(1)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [sortBy, setSortBy] = useState("name")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [cartItems, setCartItems] = useState<any[]>([])
 
   useEffect(() => {
@@ -46,74 +52,53 @@ export default function ProductDetailPage() {
       }
     }
 
-    const fetchProduct = async () => {
-      if (categoryParam) {
-        // If category parameter exists, fetch products for that category
-        try {
-          const response = await fetch(`/api/products?category=${encodeURIComponent(categoryParam)}`)
-          if (response.ok) {
-            const result = await response.json()
-            if (result.success) {
-              setProducts(result.data)
-              // Set the first product as the main product if available
-              if (result.data.length > 0) {
-                setProduct(result.data[0])
-              }
+    const fetchProducts = async () => {
+      try {
+        let url = '/api/products'
+        const params = new URLSearchParams()
+        
+        if (categoryParam) {
+          params.append('category', categoryParam)
+        }
+        if (subcategoryParam) {
+          params.append('subcategory', subcategoryParam)
+        }
+        if (subSubcategoryParam) {
+          params.append('subSubcategory', subSubcategoryParam)
+        }
+        
+        if (params.toString()) {
+          url += `?${params.toString()}`
+        }
+        
+        const response = await fetch(url)
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success) {
+            setProducts(result.data)
+            // If we have a category parameter, set it as the selected category
+            if (categoryParam) {
+              setSelectedCategory(categoryParam)
             }
           }
-        } catch (error) {
-          console.error("Error fetching products:", error)
-        } finally {
-          setLoading(false)
         }
-      } else if (!productId) {
-        setProduct({
-          _id: "dummy-product-1",
-          name: "Premium Office Chair - Ergonomic Design",
-          price: 12500,
-          description: "Experience ultimate comfort with our premium ergonomic office chair. Designed for long working hours, this chair features adjustable height, lumbar support, breathable mesh back, and smooth-rolling casters. Perfect for home offices and corporate environments. Built with high-quality materials to ensure durability and long-lasting comfort.",
-          images: [
-            "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=800",
-            "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=800",
-            "https://images.unsplash.com/photo-1581539250439-c96689b516dd?w=800"
-          ],
-          category: "Office Furniture > Chairs > Executive Chairs",
-          subCategory: "Chairs",
-          level2Category: "Executive Chairs",
-          stock: 45
-        })
+      } catch (error) {
+        console.error("Error fetching products:", error)
+      } finally {
         setLoading(false)
-        return
-      } else {
-        // Fetch specific product by ID
-        try {
-          const response = await fetch(`/api/products/${productId}`)
-          if (response.ok) {
-            const result = await response.json()
-            if (result.success && result.data) {
-              setProduct(result.data)
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching product:", error)
-        } finally {
-          setLoading(false)
-        }
       }
     }
 
-    fetchProduct()
-  }, [productId, categoryParam])
+    fetchProducts()
+  }, [categoryParam, subcategoryParam, subSubcategoryParam])
 
-  const addToCart = () => {
-    if (!product) return
-
+  const addToCart = (product: Product) => {
     const existingItem = cartItems.find(item => item.id === product._id)
     
     if (existingItem) {
       const updatedItems = cartItems.map(item =>
         item.id === product._id 
-          ? { ...item, quantity: item.quantity + quantity }
+          ? { ...item, quantity: item.quantity + 1 }
           : item
       )
       setCartItems(updatedItems)
@@ -125,49 +110,50 @@ export default function ProductDetailPage() {
         price: product.price,
         image: product.images?.[0],
         category: product.category,
-        quantity: quantity
+        quantity: 1
       }]
       setCartItems(newItems)
       localStorage.setItem("cart", JSON.stringify(newItems))
     }
 
-    alert(`${quantity} x ${product.name} added to cart!`)
+    alert(`${product.name} added to cart!`)
   }
 
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.category.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesCategory = selectedCategory === "all" || !selectedCategory || product.category.includes(selectedCategory)
+    
+    return matchesSearch && matchesCategory
+  })
 
-  const getCartQuantity = () => {
-    if (!product) return 0
-    const item = cartItems.find(item => item.id === product._id)
-    return item ? item.quantity : 0
-  }
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    switch (sortBy) {
+      case "price-low":
+        return a.price - b.price
+      case "price-high":
+        return b.price - a.price
+      case "name":
+        return a.name.localeCompare(b.name)
+      default:
+        return 0
+    }
+  })
+
+  const categories = Array.from(new Set(products.map(p => p.category.split('>')[0]?.trim()).filter(Boolean)))
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Loading products...</p>
         </div>
       </div>
     )
   }
-
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <Package className="h-24 w-24 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Product Not Found</h2>
-          <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
-          <Link href="/">
-            <Button className="bg-blue-600 hover:bg-blue-700">Back to Home</Button>
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  const images = product.images && product.images.length > 0 ? product.images : []
 
   return (
     <div className="min-h-screen">
@@ -179,221 +165,181 @@ export default function ProductDetailPage() {
           <nav className="flex items-center space-x-2 text-sm text-gray-600">
             <Link href="/" className="hover:text-blue-600">Home</Link>
             <span>/</span>
-            <Link href="/allcategories" className="hover:text-blue-600">Products</Link>
-            <span>/</span>
-            <span className="text-gray-900">{product.name}</span>
+            <span className="text-gray-900">
+              {subSubcategoryParam 
+                ? `${subSubcategoryParam} Products` 
+                : subcategoryParam 
+                ? `${subcategoryParam} Products` 
+                : categoryParam 
+                ? `${categoryParam} Products` 
+                : 'All Products'
+              }
+            </span>
           </nav>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-12 max-w-7xl">
-        <div className="grid lg:grid-cols-2 gap-16">
-          {/* Left - Image Gallery */}
-          <div>
-            {/* Main Image */}
-            <div className="relative bg-gray-50 rounded-lg overflow-hidden mb-4 group">
-              <div className="aspect-square relative">
-                {images.length > 0 ? (
-                  <Image
-                    src={images[selectedImage]}
-                    alt={product.name}
-                    fill
-                    className="object-contain p-8"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <ShoppingCart className="h-24 w-24 text-gray-300" />
-                  </div>
-                )}
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {subSubcategoryParam 
+              ? `${subSubcategoryParam} Products` 
+              : subcategoryParam 
+              ? `${subcategoryParam} Products` 
+              : categoryParam 
+              ? `${categoryParam} Products` 
+              : 'All Products'
+            }
+          </h1>
+          <p className="text-gray-600">
+            {subSubcategoryParam 
+              ? `Discover all products in the ${subSubcategoryParam} category`
+              : subcategoryParam 
+              ? `Discover all products in the ${subcategoryParam} category`
+              : categoryParam 
+              ? `Discover all products in the ${categoryParam} category`
+              : 'Discover our complete range of products'
+            }
+          </p>
+        </div>
 
-                {/* Navigation Arrows */}
-                {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <ChevronLeft className="h-5 w-5 text-gray-700" />
-                    </button>
-                    <button
-                      onClick={() => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <ChevronRight className="h-5 w-5 text-gray-700" />
-                    </button>
-                  </>
-                )}
+        {/* Filters and Search */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </div>
 
-            {/* Thumbnails */}
-            {images.length > 1 && (
-              <div className="mt-8">
-                <div className="flex gap-12 justify-start items-center">
-                  {images.map((img, index) => (
-                    <div
-                      key={index}
-                      className="flex-shrink-0"
-                    >
-                      <button
-                        onClick={() => setSelectedImage(index)}
-                        className={`block w-32 h-32 rounded-xl border-3 transition-all duration-300 overflow-hidden bg-white shadow-md ${
-                          selectedImage === index 
-                            ? 'border-blue-600 ring-4 ring-blue-200 shadow-xl' 
-                            : 'border-gray-300 hover:border-gray-400 hover:shadow-lg'
-                        }`}
-                      >
-                        <div className="w-full h-full relative bg-gray-50">
-                          <Image
-                            src={img}
-                            alt={`Product view ${index + 1}`}
-                            fill
-                            className="object-contain p-2"
-                            sizes="128px"
-                          />
-                        </div>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-4 text-center">Click to view different angles</p>
-              </div>
-            )}
+            {/* Category Filter */}
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name A-Z</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* View Mode */}
+            <div className="flex border rounded-md">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2 ${viewMode === "grid" ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+              >
+                <Grid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 ${viewMode === "list" ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
-          {/* Right - Product Info */}
-          <div>
-            {/* Category */}
-            <p className="text-sm text-gray-600 mb-2">{product.category?.split('>')[0]?.trim()}</p>
-
-            {/* Product Name */}
-            <h1 className="text-3xl font-semibold text-gray-900 mb-4 leading-tight">
-              {product.name}
-            </h1>
-
-            {/* Rating */}
-            <div className="flex items-center gap-3 mb-6 pb-6 border-b">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star key={star} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <span className="text-sm text-gray-600">4.8 (124 reviews)</span>
-            </div>
-
-            {/* Price */}
-            <div className="mb-6">
-              <div className="flex items-baseline gap-3 mb-2">
-                <span className="text-4xl font-semibold text-gray-900">
-                  ₹{product.price.toLocaleString()}
-                </span>
-                <span className="text-xl text-gray-400 line-through">
-                  ₹{Math.round(product.price * 1.2).toLocaleString()}
-                </span>
-                <span className="text-sm font-medium text-green-600">20% off</span>
-              </div>
-              <p className="text-sm text-gray-600">Inclusive of all taxes</p>
-            </div>
-
-            {/* Quantity Selector */}
-            <div className="mb-6">
-              <label className="text-sm font-medium text-gray-900 mb-3 block">Quantity</label>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <span className="w-12 text-center text-lg font-medium">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  disabled={quantity >= product.stock}
-                  className="w-10 h-10 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-                {getCartQuantity() > 0 && (
-                  <span className="ml-auto text-sm text-gray-600">
-                    {getCartQuantity()} in cart
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mb-8 pb-8 border-b">
-              <Button
-                onClick={addToCart}
-                disabled={product.stock === 0}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Add to Cart
-              </Button>
-            </div>
-
-            {/* Stock Status */}
-            <div className="mb-6">
-              {product.stock > 0 ? (
-                <div className="flex items-center gap-2 text-green-600">
-                  <Check className="h-5 w-5" />
-                  <span className="font-medium">In Stock ({product.stock} units available)</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-red-600">
-                  <span className="font-medium">Out of Stock</span>
-                </div>
-              )}
-            </div>
-
-            {/* Description */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">About this product</h2>
-              <p className="text-gray-700 leading-relaxed">
-                {product.description}
-              </p>
-            </div>
-
-            {/* Features */}
-            <div className="mb-8 pb-8 border-b">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Features</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <Truck className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Fast Delivery</p>
-                    <p className="text-xs text-gray-600">2-3 business days</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Secure Payment</p>
-                    <p className="text-xs text-gray-600">100% safe & secure</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Star className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Quality Assured</p>
-                    <p className="text-xs text-gray-600">Premium products</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">24/7 Support</p>
-                    <p className="text-xs text-gray-600">Always available</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          {/* Results Count */}
+          <div className="text-sm text-gray-600">
+            Showing {sortedProducts.length} of {products.length} products
           </div>
         </div>
+
+        {/* Products Grid/List */}
+        {sortedProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <ShoppingCart className="h-24 w-24 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
+            <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+          </div>
+        ) : (
+          <div className={viewMode === "grid" 
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" 
+            : "space-y-4"
+          }>
+            {sortedProducts.map((product) => (
+              <Card key={product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <Link href={`/product/${product._id}`}>
+                  <CardContent className="p-0">
+                    {/* Image */}
+                    <div className="aspect-square bg-gray-100 overflow-hidden relative">
+                      {product.images && product.images.length > 0 ? (
+                        <Image
+                          src={product.images[0]}
+                          alt={product.name}
+                          fill
+                          className="object-contain p-4 hover:scale-105 transition-transform duration-300"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ShoppingCart className="h-16 w-16 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                        {product.name}
+                      </h3>
+                      
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {product.description}
+                      </p>
+
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm text-gray-600 ml-1">4.8</span>
+                        </div>
+                        <span className="text-lg font-bold text-blue-600">
+                          ₹{product.price.toLocaleString()}
+                        </span>
+                      </div>
+
+                      <Button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          addToCart(product)
+                        }}
+                        className="w-full"
+                        disabled={product.stock === 0}
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Link>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
       
       <Footer />

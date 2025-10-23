@@ -88,10 +88,10 @@ const ProductSchema: Schema = new Schema({
 
 // Update status based on stock
 ProductSchema.pre('save', function(next) {
-  if (this.stock === 0) {
-    this.status = 'Out of Stock'
-  } else if (this.status === 'Out of Stock' && this.stock > 0) {
-    this.status = 'Active'
+  if ((this as any).stock === 0) {
+    (this as any).status = 'Out of Stock'
+  } else if ((this as any).status === 'Out of Stock' && (this as any).stock > 0) {
+    (this as any).status = 'Active'
   }
   next()
 })

@@ -4,9 +4,143 @@ import { ArrowRightIcon } from "lucide-react"
 import Link from "next/link"
 import { AnimatedWrapper, StaggeredContainer } from "@/components/animated-wrapper"
 
-const categoryCards = [
- 
-  {}
+interface CategoryCard {
+  id: number
+  title: string
+  description: string
+  href: string
+  buttonText: string
+  image: string
+  items: string[]
+}
+
+const categoryCards: CategoryCard[] = [
+  {
+    id: 1,
+    title: "Office Stationery",
+    description: "Complete range of office supplies and stationery items for all your business needs",
+    href: "/categories/office-stationery",
+    buttonText: "Shop Now",
+    image: "/office-stationery-bundle.jpg",
+    items: [
+      "Paper Products & Writing Materials",
+      "Files & Documents Holder",
+      "Office Tools & Accessories",
+      "Desk Essentials & Organizers"
+    ]
+  },
+  {
+    id: 2,
+    title: "IT Support & Network",
+    description: "Hardware installations, cloud services, and comprehensive network security solutions",
+    href: "/categories/it-support",
+    buttonText: "Learn More",
+    image: "/it-network-setup-office.jpg",
+    items: [
+      "Data Solutions & Cloud Services",
+      "Network Security & Firewalls",
+      "Hardware Installations",
+      "Safety Systems & CCTV"
+    ]
+  },
+  {
+    id: 3,
+    title: "Cleaning Solutions",
+    description: "Professional cleaning and premises maintenance services for pristine workspaces",
+    href: "/categories/cleaning-solutions",
+    buttonText: "Explore",
+    image: "/office-cleaning.png",
+    items: [
+      "Professional Deep Cleaning",
+      "Carpet & Chair Shampooing",
+      "Marble Polishing",
+      "Floor Scrubbing Services"
+    ]
+  },
+  {
+    id: 4,
+    title: "Business Promotion",
+    description: "Branding solutions, marketing materials, and comprehensive promotional strategies",
+    href: "/categories/business-promotion",
+    buttonText: "Promote",
+    image: "/corporate-branding-materials.jpg",
+    items: [
+      "Logo and Branding Solutions",
+      "Digital Marketing Solutions",
+      "Website Design Solutions",
+      "2D/3D Animation Videos"
+    ]
+  },
+  {
+    id: 5,
+    title: "Office Support Solutions",
+    description: "Complete office support services including courier, relocation, and space solutions",
+    href: "/categories/office-support",
+    buttonText: "Support",
+    image: "/modern-office-desk-setup.jpg",
+    items: [
+      "Courier Services",
+      "Packaging & Relocation",
+      "Office Beautification",
+      "Office Space Solutions"
+    ]
+  },
+  {
+    id: 6,
+    title: "Office Furniture & Interior",
+    description: "Modern furniture and complete interior fit-out solutions for professional workspaces",
+    href: "/categories/furniture-interior",
+    buttonText: "Furnish",
+    image: "/modern-office-desk-front-view.jpg",
+    items: [
+      "Office Chairs & Workstations",
+      "Fit-outs & Interiors",
+      "Conference Tables",
+      "File Cabinets & Shelves"
+    ]
+  },
+  {
+    id: 7,
+    title: "Printing Solutions",
+    description: "Professional printing services and custom branded materials for all business needs",
+    href: "/categories/printing-solutions",
+    buttonText: "Print",
+    image: "/large-format-printing-banners.jpg",
+    items: [
+      "Sign Board Printing",
+      "Visiting Card Printing",
+      "Brochure & Pamphlet Printing",
+      "Customized Files Printing"
+    ]
+  },
+  {
+    id: 8,
+    title: "AMC Services",
+    description: "Annual maintenance contracts and technical support for all your business equipment",
+    href: "/categories/amc-services",
+    buttonText: "Maintain",
+    image: "/ergonomic-office-chair.png",
+    items: [
+      "Plumbing Services",
+      "Carpentry Services",
+      "Electrician Services",
+      "AC Servicing"
+    ]
+  },
+  {
+    id: 9,
+    title: "Corporate Gifting",
+    description: "Premium corporate gifts and employee recognition items with custom branding",
+    href: "/categories/corporate-gifting",
+    buttonText: "Gift",
+    image: "/desk-organizer-set.jpg",
+    items: [
+      "Promotional Items",
+      "Custom Merchandise",
+      "Executive Gifts",
+      "Employee Recognition"
+    ]
+  }
 ]
 
 export function CategoriesSection() {
@@ -70,7 +204,7 @@ export function CategoriesSection() {
                       
                       {/* Feature List - Show only 2 items */}
                       <div className="space-y-2 mb-4">
-                        {card.items.slice(0, 2).map((item, index) => (
+                        {card.items.slice(0, 2).map((item: string, index: number) => (
                           <div key={index} className="flex items-center space-x-2">
                             <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                             <span className="text-sm text-white drop-shadow-sm font-serif">{item}</span>

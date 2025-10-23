@@ -16,30 +16,35 @@ export async function GET(request: NextRequest) {
     // Build navbar data structure
     const navbarData = categories.map(category => {
       const categorySubcategories = subcategories.filter(sub => 
-        sub.mainCategory === category.title
+        sub.mainCategory === category.name
       ).map(sub => {
         const subLevel2Categories = level2Categories.filter(level2 => 
-          level2.mainCategory === category.title && level2.subCategory === sub.title
+          level2.mainCategory === category.name && level2.subCategory === sub.name
         )
 
         return {
-          name: sub.title,
-          href: `/categories/${category.title.toLowerCase().replace(/\s+/g, '-')}/${sub.title.toLowerCase().replace(/\s+/g, '-')}`,
+          name: sub.name,
+          href: `/products?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(sub.name)}`,
           nested: subLevel2Categories.length > 0 ? subLevel2Categories.map(level2 => ({
-            name: level2.title,
-            href: `/categories/${category.title.toLowerCase().replace(/\s+/g, '-')}/${sub.title.toLowerCase().replace(/\s+/g, '-')}/${level2.title.toLowerCase().replace(/\s+/g, '-')}`
+            name: level2.name,
+            href: `/products?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(sub.name)}&subSubcategory=${encodeURIComponent(level2.name)}`
           })) : undefined
         }
       })
 
       return {
-        title: category.title,
+        title: category.name,
         subcategories: [
           {
             name: `View All ${category.mainUse?.toLowerCase() === 'service' ? 'Services' : 'Products'}`,
-            href: `/categories/${category.title.toLowerCase().replace(/\s+/g, '-')}`
+            href: category.mainUse?.toLowerCase() === 'service' ? `/services?category=${encodeURIComponent(category.name)}` : `/products?category=${encodeURIComponent(category.name)}`
           },
-          ...categorySubcategories
+          ...categorySubcategories.map(sub => ({
+            ...sub,
+            href: category.mainUse?.toLowerCase() === 'service' 
+              ? `/services?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(sub.name)}`
+              : sub.href
+          }))
         ]
       }
     })
@@ -51,7 +56,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching navbar data:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch navbar data' },
+      { 
+        error: 'Failed to fetch navbar data',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
